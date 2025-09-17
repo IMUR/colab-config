@@ -12,17 +12,7 @@ export NODE_ROLE="$(hostname)"
 export ARCH="$(uname -m)"
 export OS=$(uname -s)
 
-{{- if .has_high_memory }}
-export HAS_HIGH_MEMORY=1
-{{- else }}
-export HAS_HIGH_MEMORY=0
-{{- end }}
-
-{{- if .has_ml_focus }}
-export HAS_ML_FOCUS=1
-{{- else }}
-export HAS_ML_FOCUS=0
-{{- end }}
+# Runtime capability detection moved to individual shells
 
 # ====================================================================
 # UNIFIED PATH CONFIGURATION
