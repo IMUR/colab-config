@@ -5,6 +5,9 @@
 zmodload zsh/datetime
 _shell_start_time=$EPOCHREALTIME
 
+# Add user's local bin to the PATH at the very beginning
+export PATH="$HOME/.local/bin:$PATH"
+
 # ====================================================================
 # ENVIRONMENT DETECTION
 # ====================================================================
@@ -239,10 +242,17 @@ fi
 # Show startup time (only in interactive shells)
 if [[ -o interactive ]]; then
   _shell_end_time=$EPOCHREALTIME
-  _startup_time=$(( (_shell_end_time - _shell_start_time) * 1000 ))
-  if (( _startup_time > 100 )); then
-    echo "🐚 Shell loaded in ${_startup_time:.0f}ms (consider optimization)"
+  # Use float arithmetic for calculation
+  zmodload zsh/mathfunc 2>/dev/null
+  _startup_time=$(( ( _shell_end_time - _shell_start_time ) * 1000 ))
+
+  # Convert to integer for comparison and printing
+  _startup_ms=${_startup_time%.*}
+
+  if (( _startup_ms > 100 )); then
+    echo "🐚 Shell loaded in ${_startup_ms}ms (consider optimization)"
   fi
+  unset _startup_ms
 fi
 
 # ====================================================================
