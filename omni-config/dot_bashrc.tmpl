@@ -250,7 +250,7 @@ alias gpu-util='nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader'
 
 {{- if .has_docker }}
 # Docker aliases
-alias dps='docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"'
+alias dps='docker ps -a --format "table {{`{{.ID}}`}}\t{{`{{.Image}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"'
 alias dimg='docker images'
 alias dlog='docker logs -f'
 alias dexec='docker exec -it'
