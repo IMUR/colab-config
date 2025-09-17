@@ -1,82 +1,105 @@
-# Co-lab Omni Config
+# Omni-Config: Universal User Environment
 
-**THE** single source of truth for all cluster configurations. Uses chezmoi for templating and deployment.
+**Purpose**: User-level configurations deployed identically across all cluster nodes (crtr, prtr, drtr)
 
-## 🎯 Purpose
+**Role in Hybrid Strategy**: Pure chezmoi deployment domain - rich user experience with cross-node consistency
 
-This is the **single source of truth** for configurations that:
-- Are installed on ALL 3 cluster nodes (crtr, prtr, drtr)
-- Should be **identical** across all cluster nodes
-- Form the **foundational layer** of the cluster environment
+## 🏗️ What Omni-Config Provides
 
-**Note**: Snitcher has moved to independent mobile access configuration
+This directory contains the **user environment foundation** for the co-lab cluster:
 
-## 📁 Directory Structure
+### **Core Shell Environment**
+- **`dot_profile`**: Universal profile with intelligent tool detection system
+- **`dot_zshrc`**: Modern ZSH configuration with performance optimization
+- **`dot_config/starship.toml`**: Professional shell prompt configuration
+
+### **Tool Integration System**
+- **Smart Detection**: Handles cross-architecture differences (ARM64 vs x86_64)
+- **Graceful Degradation**: Works with or without modern tools installed
+- **Package Compatibility**: Handles Debian naming (bat/batcat, fd/fdfind)
+- **Performance Focus**: Optimized shell startup with timing feedback
+
+## 📁 Actual Directory Contents
 
 ```
-unified-foundation/
-├── shell/                  # Shell environment configurations
-│   ├── dotfiles/          # .profile, .zshrc, .bashrc templates
-│   ├── env/               # Environment variable definitions
-│   └── scripts/           # Shell utility scripts
-├── tools/                 # Tool configurations
-│   ├── modern-cli/        # eza, bat, fd, rg, zoxide, fzf, etc.
-│   ├── development/       # git, cargo, npm, ansible configs
-│   └── system/            # tmux, vim, ssh client configs
-├── system/                # System-level configurations
-│   ├── paths/             # PATH and binary management
-│   ├── permissions/       # File ownership and permissions
-│   └── services/          # Systemd and service configs
-└── documentation/         # Deployment and architecture docs
-    ├── deployment/        # How to deploy these configs
-    └── architecture/      # Design decisions and principles
+omni-config/
+├── dot_profile              # Universal profile + HAS_* tool detection
+├── dot_zshrc               # Modern ZSH with tool integrations
+├── dot_config/             # Tool-specific configurations
+│   └── starship.toml       # Professional prompt setup
+├── tools/                  # Tool management
+│   └── modern-cli/         # Modern CLI tool configurations
+│       ├── starship.toml   # Alternative starship config
+│       └── tool-install.yml # Ansible tool installation
+├── documentation/          # Design documentation
+│   └── architecture/
+│       └── DESIGN_PRINCIPLES.md
+├── INSTALL.md             # Deployment instructions
+└── README.md              # This file
 ```
 
-## 🚀 Deployment Strategy
+## 🔧 Configuration Capabilities
 
-1. **Git Version Control**: All configs are tracked in git
-2. **Ansible Deployment**: Automated rollout to all nodes
-3. **Idempotent Operations**: Safe to run multiple times
-4. **Backup & Rollback**: Automatic backup before changes
+### **Tool Detection Engine** (dot_profile)
+```bash
+# Intelligent cross-platform detection with fallbacks
+export HAS_EZA=$(_has eza && echo 1 || echo 0)
+export HAS_BAT=$(_has bat || _has batcat && echo 1 || echo 0)  # Debian compatibility
+export HAS_FD=$(_has fd || _has fdfind && echo 1 || echo 0)   # Package name handling
 
-## 🎯 Target State
-
-Based on MODERN_SHELL_ROLLOUT.md analysis:
-
-### ✅ Currently Unified
-- Shell environment (zsh, .profile, .zshrc)
-- Modern CLI tools (eza, batcat, fdfind, rg, fzf, nnn, delta)
-- Basic system configurations
-
-### 🔧 Needs Unification
-- Tool detection (bat vs batcat, fd vs fdfind)
-- Missing tools on some nodes (zoxide, dust, starship, atuin)
-- NVM integration
-- Development tool configurations
-
-### 📦 Tool Installation Status
-```
-Tool         crtr  prtr  drtr
-──────────────────────────
-eza          ✅    ✅    ✅
-batcat       ✅    ✅    ✅
-fdfind       ✅    ✅    ✅
-rg           ✅    ✅    ✅
-fzf          ✅    ✅    ✅
-nnn          ✅    ✅    ✅
-delta        ✅    ✅    ✅
-zoxide       ✅    ❌    ❌
-dust         ✅    ❌    ❌
-starship     ✅    ❌    ❌
-atuin        ✅    ❌    ❌
+# Architecture awareness, development tools, performance optimization
 ```
 
-## 🎯 Goals
+### **Modern Shell Features** (dot_zshrc)
+```bash
+# Performance-optimized ZSH with startup timing
+# Modern aliases with intelligent fallbacks
+# Cross-architecture compatibility (ARM64/x86_64)
+# Tool integrations: starship, fzf, zoxide, atuin
+# Node-specific customization support (.zshrc.local, .zshrc.$NODE_ROLE)
+```
 
-1. **100% Tool Consistency** across all nodes
-2. **Unified Configuration Management** via git + ansible
-3. **Bulletproof Deployment** with rollback capability
-4. **Documentation** of all decisions and procedures
-5. **Future-Proof Architecture** for easy additions
+### **Professional Prompt** (starship.toml)
+```toml
+# Cluster-aware prompt with /cluster-nas shortcuts
+# Git integration, development environment indicators
+# Performance-focused configuration
+```
 
-This foundation ensures every node in the cluster has an identical, modern, productive environment.
+## 🎯 Chezmoi Integration Context
+
+**Current State**: Ready for chezmoi deployment with templating completion needed
+
+**Missing for Full Functionality**:
+- `.chezmoi.toml.tmpl` - Node templating configuration
+- Template variables in configuration files for node-specific adaptation
+
+**Deployment Ready**: Core configurations work without templating, templating adds node-specific enhancements
+
+## 🧭 Agent Integration Notes
+
+**Context**: omni-config represents the user experience foundation within the hybrid strategy
+
+**Capabilities Available to Agents**:
+- **Cross-architecture shell environment** with intelligent tool detection
+- **Performance-optimized configuration** with graceful degradation
+- **Professional development environment** with modern tool integrations
+- **Cluster-specific enhancements** (aliases, paths, shortcuts)
+
+**Constraints for Agent Consideration**:
+- Requires chezmoi for deployment (agents may need to install/configure)
+- Designed for cluster nodes only (excludes snitcher mobile access)
+- Depends on shared storage for template source distribution
+
+**Integration with Cluster Strategy**:
+- Complements minimal ansible system preparation
+- Provides rich user experience layer
+- Supports node-specific customization via templating (when completed)
+
+## 🔗 Related Documentation
+
+**Design Philosophy**: See `documentation/architecture/DESIGN_PRINCIPLES.md` for configuration hierarchy and tool integration strategy
+
+**Deployment Context**: See main repository documentation for hybrid strategy and cluster-wide implementation approach
+
+**Installation**: See `INSTALL.md` for chezmoi deployment procedures (requires templating completion)
