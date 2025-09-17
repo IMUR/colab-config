@@ -5,20 +5,16 @@
 zmodload zsh/datetime
 _shell_start_time=$EPOCHREALTIME
 
-# Add user's local bin to the PATH at the very beginning
-export PATH="$HOME/.local/bin:$PATH"
-
 # ====================================================================
-# ENVIRONMENT DETECTION
+# CRITICAL: Source .profile FIRST (Foundation Layer)
 # ====================================================================
+# This ensures we get all environment variables, PATH, and tool detection
+# before any interactive shell setup begins
 
-# Architecture and OS detection
-export ARCH=$(uname -m)
-export OS=$(uname -s)
-export NODE_ROLE="${NODE_ROLE:-$(hostname)}"
+emulate sh -c 'source ~/.profile'
 
-# PATH is now managed by ~/.profile for consistency across shells and SSH
-# This section has been moved to unified profile configuration
+# Now we have: NODE_TYPE, NODE_ROLE, HAS_*, PATH, NVM_DIR, etc.
+# from our templated .profile foundation
 
 # ====================================================================
 # MODERN TOOL AVAILABILITY CHECKS
