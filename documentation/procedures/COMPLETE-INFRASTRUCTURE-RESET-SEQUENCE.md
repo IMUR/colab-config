@@ -154,21 +154,33 @@ cat omni-config/.chezmoi.toml.tmpl | grep -A5 -B5 "has_gpu\|has_docker"
 
 ### 2.1 Stop All GPU/Docker Workloads
 
-**Graceful Service Shutdown:**
+**⚠️ Critical: Execute Systemd Service Management**
 ```bash
-# Execute on prtr (primary GPU node)
+# Execute comprehensive service management (see SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md)
 ssh prtr "
-    echo '=== Stopping Archon Services ==='
+    echo '=== Stopping Application Services ==='
+    # Stop Archon and Ollama systemd services (discovered via systemctl analysis)
+    sudo systemctl stop archon.service ollama.service
+    sudo systemctl disable archon.service ollama.service
+
+    echo '=== Stopping Archon Containers ==='
     # Archon containers are already preserved, now stop them
     docker stop \$(docker ps -q) 2>/dev/null || true
 
-    echo '=== Stopping Docker Service ==='
-    sudo systemctl stop docker
-    sudo systemctl stop containerd
+    echo '=== Stopping GPU Services ==='
+    sudo systemctl stop nvidia-persistenced.service
+    sudo systemctl stop nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service
+    sudo systemctl disable nvidia-persistenced.service
+
+    echo '=== Stopping Docker Services ==='
+    sudo systemctl stop docker.service docker.socket containerd.service
+    sudo systemctl disable docker.service docker.socket containerd.service
 
     echo '=== All services stopped ==='
 "
 ```
+
+**📖 Reference**: See [Systemd Service Management Addendum](SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md) for detailed service management procedures.
 
 ### 2.2 Execute Complete NVIDIA Removal
 
@@ -569,13 +581,33 @@ for node in crtr prtr drtr; do
     "
 done
 
-# Archon services
+# Systemd service validation (critical discovery from systemctl analysis)
 ssh prtr "
-    echo 'Testing Archon services:'
-    docker ps --filter 'name=archon'
+    echo '=== Systemd Service Validation ==='
+    # Check application services
+    systemctl is-active archon.service && echo '✅ Archon systemd service active' || echo '⚠️ Archon systemd service inactive'
+    systemctl is-active ollama.service && echo '✅ Ollama service active' || echo '⚠️ Ollama service inactive'
+
+    # Check infrastructure services
+    systemctl is-active nvidia-persistenced.service && echo '✅ NVIDIA persistence active'
+    systemctl is-active docker.service && echo '✅ Docker service active'
+    systemctl is-active containerd.service && echo '✅ Containerd active'
+"
+
+# Archon dual-stack validation (containers + systemd service)
+ssh prtr "
+    echo 'Testing Archon dual-stack (containers + systemd):'
+    docker ps --filter 'name=archon' --format 'Container: {{.Names}} {{.Status}}'
+    systemctl status archon.service --no-pager -l
     curl -f http://localhost:8051/health 2>/dev/null && echo '✅ MCP healthy' || echo '❌ MCP not responding'
     curl -f http://localhost:8181/health 2>/dev/null && echo '✅ Server healthy' || echo '❌ Server not responding'
     curl -f http://localhost:8052/health 2>/dev/null && echo '✅ Agents healthy' || echo '❌ Agents not responding'
+"
+
+# Execute comprehensive service health check
+ssh prtr "
+    # Run the comprehensive health check from service addendum
+    /cluster-nas/colab/colab-config/documentation/procedures/systemd-service-health-check.sh
 "
 
 # Cluster connectivity
@@ -585,6 +617,7 @@ for node in crtr prtr drtr; do
 done
 
 echo "✅ Complete infrastructure reset sequence completed successfully!"
+echo "📖 For detailed service management, see: SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md"
 ```
 
 ### 5.3 Enable Monitoring

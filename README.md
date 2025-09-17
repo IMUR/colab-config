@@ -40,7 +40,8 @@ colab-config/
 │   │   ├── NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md  # GPU/CUDA deployment strategy
 │   │   └── DOCKER-CLEAN-REINSTALL-STRATEGY.md  # Docker optimization with Archon preservation
 │   ├── procedures/       # Deployment and operational guides
-│   │   └── COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md  # End-to-end reset procedure
+│   │   ├── COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md  # End-to-end reset procedure
+│   │   └── SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md     # Service management for infrastructure reset
 │   └── AI-AGENT-*.md     # Agent-focused procedures
 ├── 🛠️ services/          # Optional service configs
 ├── 🏗️ infrastructure/    # Supporting configurations
