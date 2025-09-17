@@ -1,186 +1,217 @@
-# AI Agent Safe Deployment Guide
+# AI Agent Modern Hybrid Deployment Guide
 
-**Target Audience**: Independent AI agents operating from snitcher
-**Purpose**: Comprehensive cluster assessment and deployment planning
-**Safety Level**: Maximum - assumes agent has no prior cluster knowledge
+**Target Audience**: Independent AI agents operating from snitcher  
+**Purpose**: Fast, safe deployment using modern hybrid approach  
+**Safety Level**: High confidence - user-level changes only  
+**Deployment Time**: ~20 minutes total
 
 ## 🎯 Mission Objective
 
 As an AI agent operating from snitcher, your mission is to:
-1. **Assess** the current state of all 3 cluster nodes
-2. **Validate** repository readiness for deployment
-3. **Create** a safe deployment action plan
-4. **Present** findings and recommendations
+1. **Assess** cluster connectivity and basic health (5 minutes)
+2. **Deploy** user configurations via chezmoi (10 minutes)  
+3. **Validate** deployment success (5 minutes)
+4. **Report** completion status and next steps
 
-## 🔍 Phase 1: Cluster Discovery and Assessment
+## 🏗️ **Modern Hybrid Approach**
 
-### 1.1 Initial Connectivity Assessment
+**System-Level (Minimal)**:
+- Install chezmoi binary on each node
+- Optional: Basic system environment (/etc/profile.d/)
+- Health monitoring only
 
-**Execute these commands from snitcher to test cluster access:**
+**User-Level (Primary Focus)**:
+- Rich shell configurations (.zshrc, .profile)
+- Modern CLI tools with smart detection
+- Cross-node consistency with templating  
+- Node-specific customizations
+
+## 🔍 Phase 1: Quick Cluster Assessment (5 minutes)
+
+### 1.1 **Simplified Connectivity Check**
+
+**Execute from snitcher - simple and fast:**
 
 ```bash
 #!/bin/bash
-# Cluster Discovery Script - Run from snitcher
+# Quick Hybrid Assessment - Run from snitcher
 
-echo "=== CLUSTER DISCOVERY ASSESSMENT ==="
+echo "=== HYBRID DEPLOYMENT ASSESSMENT ==="
 echo "Timestamp: $(date)"
-echo "Operating from: $(hostname) as $(whoami)"
+echo "Method: Modern Hybrid (Minimal Ansible + Pure Chezmoi)"
 echo
 
-# Test network connectivity to all cluster nodes
-NODES=("crtr:192.168.254.10" "prtr:192.168.254.20" "drtr:192.168.254.30")
+# Quick SSH connectivity test
+NODES=(crtr prtr drtr)
 
-echo "=== NETWORK CONNECTIVITY ==="
-for node_entry in "${NODES[@]}"; do
-    IFS=':' read -r node ip <<< "$node_entry"
-    echo -n "Testing $node ($ip): "
-    if ping -c 1 -W 2 "$ip" >/dev/null 2>&1; then
-        echo "✅ REACHABLE"
-    else
-        echo "❌ UNREACHABLE"
-    fi
-done
-echo
-
-# Test SSH connectivity
 echo "=== SSH CONNECTIVITY ==="
-for node_entry in "${NODES[@]}"; do
-    IFS=':' read -r node ip <<< "$node_entry"
-    echo -n "SSH to $node: "
-    if timeout 5 ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no "$node" 'echo "SSH_OK"' 2>/dev/null | grep -q "SSH_OK"; then
-        echo "✅ SSH ACCESSIBLE"
+ACCESSIBLE=0
+for node in "${NODES[@]}"; do
+    echo -n "Testing $node: "
+    if timeout 3 ssh -o ConnectTimeout=2 "$node" 'echo OK' 2>/dev/null | grep -q "OK"; then
+        echo "✅ ACCESSIBLE"
+        ((ACCESSIBLE++))
     else
-        echo "❌ SSH FAILED"
+        echo "❌ FAILED"  
     fi
 done
+
+echo
+echo "=== ASSESSMENT RESULT ==="
+if [[ $ACCESSIBLE -eq 3 ]]; then
+    echo "🟢 ALL NODES ACCESSIBLE - PROCEED with hybrid deployment"
+    exit 0
+elif [[ $ACCESSIBLE -ge 2 ]]; then
+    echo "🟡 PARTIAL ACCESS ($ACCESSIBLE/3) - Proceed with accessible nodes only"
+    exit 1  
+else
+    echo "🔴 INSUFFICIENT ACCESS ($ACCESSIBLE/3) - Fix connectivity first"
+    exit 2
+fi
 ```
 
-**Assessment Criteria:**
-- ✅ **PROCEED**: All nodes reachable and SSH accessible
-- ⚠️ **CAUTION**: 1-2 nodes unreachable (partial deployment possible)
-- ❌ **ABORT**: Majority of nodes unreachable
+**Decision Matrix:**
+- **3/3 nodes**: ✅ **FULL DEPLOYMENT** - proceed immediately
+- **2/3 nodes**: ⚠️ **PARTIAL DEPLOYMENT** - deploy to accessible nodes  
+- **1/3 nodes**: ❌ **ABORT** - fix connectivity issues first
 
-### 1.2 Node Health Assessment
+### 1.2 **Quick Health Check** (Optional)
 
-**For each accessible node, gather system information:**
+**Simple validation for accessible nodes:**
 
 ```bash
 #!/bin/bash
-# Node Health Assessment - Run for each node
+# Quick Health Check - Hybrid Deployment Focus
 
-assess_node() {
-    local node="$1"
-    echo "=== ASSESSING NODE: $node ==="
+echo "=== QUICK HEALTH VALIDATION ==="
 
-    # Basic system info
-    echo "--- System Information ---"
-    ssh "$node" "echo 'Hostname: \$(hostname)'; echo 'User: \$(whoami)'; echo 'UID: \$(id -u)'; echo 'Groups: \$(groups)'"
-
-    # System resources
-    echo "--- Resource Status ---"
-    ssh "$node" "echo 'Uptime: \$(uptime)'; echo 'Memory: \$(free -h | grep Mem)'; echo 'Disk: \$(df -h / | tail -1)'"
-
-    # Critical services
-    echo "--- Critical Services ---"
-    ssh "$node" "systemctl is-active ssh sshd 2>/dev/null || echo 'SSH service check failed'"
-
-    # NFS mount status
-    echo "--- NFS Mount Status ---"
-    ssh "$node" "if mount | grep -q '/cluster-nas'; then echo '✅ NFS mounted'; else echo '❌ NFS not mounted'; fi"
-
-    # Current shell configuration
-    echo "--- Shell Configuration ---"
-    ssh "$node" "ls -la ~/.zshrc ~/.bashrc 2>/dev/null | head -5"
-
-    # Configuration dependencies
-    echo "--- Config Dependencies ---"
-    ssh "$node" "if [[ -L ~/.zshrc ]]; then echo 'Symlink: \$(readlink ~/.zshrc)'; ls -la \$(readlink ~/.zshrc) 2>/dev/null || echo 'BROKEN SYMLINK'; fi"
-
+for node in crtr prtr drtr; do
+    echo -n "Node $node: "
+    
+    # Test SSH access and basic commands
+    if ssh "$node" "
+        echo 'Host: \$(hostname)'
+        echo 'Disk: \$(df -h / | tail -1 | awk '{print \$5}')'
+        echo 'NFS: \$(mount | grep cluster-nas >/dev/null && echo mounted || echo missing)'
+        echo 'Chezmoi: \$(command -v chezmoi >/dev/null && echo installed || echo missing)'
+    " 2>/dev/null; then
+        echo "✅ HEALTHY"
+    else
+        echo "❌ HEALTH CHECK FAILED"
+    fi
     echo
-}
-
-# Run assessment for each node
-for node in crtr prtr drtr; do
-    assess_node "$node"
 done
+
+echo "✅ Health check complete - ready for hybrid deployment"
 ```
 
-**Critical Health Indicators:**
-- ✅ **Healthy**: SSH accessible, NFS mounted, configs working
-- ⚠️ **Degraded**: Accessible but NFS issues or config problems
-- ❌ **Critical**: Major service failures or inaccessible
+**Health Indicators (Simplified):**
+- ✅ **Ready**: SSH works, basic commands respond  
+- ⚠️ **Proceed**: SSH works, some issues (will be resolved by deployment)
+- ❌ **Skip**: SSH issues (exclude from deployment)
 
-### 1.3 Current Configuration State Assessment
+---
 
-**Determine the current configuration management approach:**
+## 🚀 Phase 2: Hybrid Deployment (10 minutes)
+
+### 2.1 **System Preparation** (2 minutes)
+
+**Install chezmoi on all accessible nodes:**
 
 ```bash
 #!/bin/bash
-# Configuration State Assessment
+# Install Chezmoi - Simple System Preparation
 
-echo "=== CONFIGURATION STATE ASSESSMENT ==="
+echo "=== INSTALLING CHEZMOI ==="
 
-# Check symlink-based configuration
-echo "--- Symlink Configuration Status ---"
-for node in crtr prtr drtr; do
-    echo "Node $node:"
-    ssh "$node" "
-        if [[ -L ~/.zshrc ]]; then
-            echo '  Symlink target: \$(readlink ~/.zshrc)'
-            if [[ -f \$(readlink ~/.zshrc) ]]; then
-                echo '  ✅ Symlink working'
-            else
-                echo '  ❌ Symlink broken'
-            fi
-        else
-            echo '  📄 Local file (not symlinked)'
-        fi
-    "
+NODES=(crtr prtr drtr)  # Adjust if nodes are unreachable
+
+for node in "${NODES[@]}"; do
+    echo "Installing chezmoi on $node..."
+    
+    if ssh "$node" "curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"; then
+        echo "✅ $node: chezmoi installed"
+        
+        # Verify installation
+        ssh "$node" "~/.local/bin/chezmoi --version" && echo "   Version confirmed"
+    else
+        echo "❌ $node: chezmoi installation failed"
+    fi
+    echo
 done
 
-# Check chezmoi status
-echo "--- Chezmoi Status ---"
-for node in crtr prtr drtr; do
-    echo "Node $node:"
-    ssh "$node" "
-        if command -v chezmoi >/dev/null; then
-            echo '  ✅ Chezmoi installed: \$(which chezmoi)'
-            if chezmoi status >/dev/null 2>&1; then
-                echo '  📋 Chezmoi initialized'
-                chezmoi status 2>/dev/null | head -3
-            else
-                echo '  ⚪ Chezmoi not initialized'
-            fi
-        else
-            echo '  ❌ Chezmoi not installed'
-        fi
-    "
-done
-
-# Check cluster-nas accessibility
-echo "--- Cluster-NAS Accessibility ---"
-for node in crtr prtr drtr; do
-    echo "Node $node:"
-    ssh "$node" "
-        if [[ -d /cluster-nas ]]; then
-            if timeout 2 ls /cluster-nas >/dev/null 2>&1; then
-                echo '  ✅ /cluster-nas accessible'
-                echo '  📁 Contents: \$(ls /cluster-nas | wc -l) directories'
-            else
-                echo '  ⚠️ /cluster-nas exists but not accessible'
-            fi
-        else
-            echo '  ❌ /cluster-nas not mounted'
-        fi
-    "
-done
+echo "✅ System preparation complete"
 ```
 
-## 🔍 Phase 2: Repository Validation
+**Why This Is Safe:**
+- ✅ User-level installation only (no system modifications)
+- ✅ Downloads from official chezmoi source  
+- ✅ Installs to ~/.local/bin (no root required)
+- ✅ Quick rollback (just delete ~/.local/bin/chezmoi)
 
-### 2.1 Repository Accessibility Assessment
+### 2.2 **Deploy User Configurations** (5 minutes)
 
-**Validate the colab-config repository from snitcher:**
+**Copy omni-config source and deploy via chezmoi:**
+
+```bash
+#!/bin/bash
+# Deploy User Configurations via Chezmoi
+
+echo "=== DEPLOYING USER CONFIGURATIONS ==="
+
+# 1. Copy omni-config source to cluster-nas
+echo "Copying omni-config to cluster-nas..."
+if scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/; then
+    echo "✅ Source copied to cluster-nas"
+else
+    echo "❌ Failed to copy source - check NFS access"
+    exit 1
+fi
+
+# 2. Deploy to director first (least critical node for testing)
+echo
+echo "=== TESTING ON DIRECTOR (drtr) ==="
+if ssh drtr "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"; then
+    echo "✅ Director deployment successful"
+    
+    # Quick validation
+    if ssh drtr 'source ~/.zshrc && echo "Shell configuration loaded successfully"'; then
+        echo "✅ Director validation passed"
+    else
+        echo "⚠️ Director validation issues (may still be functional)"
+    fi
+else
+    echo "❌ Director deployment failed - aborting"
+    exit 1
+fi
+
+# 3. Deploy to remaining nodes
+echo
+echo "=== DEPLOYING TO REMAINING NODES ==="
+for node in prtr crtr; do
+    echo "Deploying to $node..."
+    
+    if ssh "$node" "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"; then
+        echo "✅ $node: deployment successful"
+        
+        # Quick validation  
+        ssh "$node" 'source ~/.zshrc 2>/dev/null && echo "✅ '$node': config loaded"'
+    else
+        echo "❌ $node: deployment failed"
+    fi
+    echo
+done
+
+echo "✅ User configuration deployment complete"
+```
+
+---
+
+## ✅ Phase 3: Validation & Completion (5 minutes)
+
+### 3.1 **Comprehensive Validation**
+
+**Verify deployment success across all nodes:**
 
 ```bash
 #!/bin/bash

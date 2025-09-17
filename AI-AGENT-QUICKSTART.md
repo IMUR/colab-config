@@ -1,8 +1,21 @@
 # AI Agent Quick Start Guide
 
-**Target**: Independent AI agents operating from snitcher
-**Mission**: Assess cluster and plan safe deployment of colab-config
+**Target**: Independent AI agents operating from snitcher  
+**Mission**: Assess cluster and deploy hybrid configuration management  
+**Approach**: **Modern Hybrid** - Minimal Ansible + Chezmoi  
 **Safety**: Maximum caution - assume no prior knowledge
+
+## 🎯 **MODERN HYBRID APPROACH**
+
+**System-Level (Minimal Ansible)**:
+- Package installation, system services
+- /etc/profile.d/ system-wide environment  
+- Basic system preparation
+
+**User-Level (Pure Chezmoi)**:
+- Shell configurations (.zshrc, .profile)
+- Dotfiles and personal settings
+- Cross-node consistency with templating
 
 ## 🚀 Quick Assessment Commands
 
@@ -21,39 +34,48 @@ done
 
 ### 2. Check Current Configuration State (3 minutes)
 ```bash
-# Assess current shell configuration approach
+# Assess current configuration approach
 for node in crtr prtr drtr; do
     echo "=== $node ==="
     ssh "$node" "
+        echo 'Current config approach:'
         if [[ -L ~/.zshrc ]]; then
-            echo 'Symlink: \$(readlink ~/.zshrc)'
-            ls -la \$(readlink ~/.zshrc) 2>/dev/null && echo '✅ Working' || echo '❌ Broken'
+            echo '  📎 Symlinks: \$(readlink ~/.zshrc)'
+            ls -la \$(readlink ~/.zshrc) 2>/dev/null && echo '    ✅ Working' || echo '    ❌ Broken'
         else
-            echo '📄 Local file'
+            echo '  📄 Local files'
         fi
-        echo 'Chezmoi: \$(command -v chezmoi >/dev/null && echo installed || echo missing)'
+        
+        echo 'Chezmoi status:'
+        if command -v chezmoi >/dev/null; then
+            echo '  ✅ Installed: \$(which chezmoi)'
+            chezmoi status 2>/dev/null | head -3 || echo '  ⚪ Not initialized'
+        else
+            echo '  ❌ Not installed'
+        fi
     "
 done
 ```
 
-### 3. Validate Repository (2 minutes)
+### 3. Repository Structure Validation (1 minute)
 ```bash
-# Test repository access and clone
-REPO="https://github.com/IMUR/colab-config.git"
-TEMP_DIR="/tmp/colab-config-$(date +%s)"
+# Quick validation of hybrid approach readiness
+cd "/path/to/colab-config"
 
-if git clone "$REPO" "$TEMP_DIR"; then
-    echo "✅ Repository accessible"
-    cd "$TEMP_DIR"
+echo "=== HYBRID SETUP VALIDATION ==="
 
-    # Quick structure check
-    for dir in ansible services omni-config documentation; do
-        [[ -d "$dir" ]] && echo "✅ $dir/" || echo "❌ $dir/ missing"
-    done
-else
-    echo "❌ Repository clone failed"
-    exit 1
-fi
+# Check omni-config structure
+echo "📁 Omni-config structure:"
+[[ -f "omni-config/dot_zshrc" ]] && echo "  ✅ dot_zshrc" || echo "  ❌ Missing dot_zshrc"
+[[ -f "omni-config/dot_profile" ]] && echo "  ✅ dot_profile" || echo "  ❌ Missing dot_profile"
+[[ -d "omni-config/dot_config" ]] && echo "  ✅ dot_config/" || echo "  ❌ Missing dot_config/"
+
+# Check minimal ansible structure
+echo "📁 System-level setup:"
+[[ -f "ansible/playbooks/cluster-health.yml" ]] && echo "  ✅ Health checks" || echo "  ❌ Missing health checks"
+[[ -f "ansible/inventory/hosts.yml" ]] && echo "  ✅ Inventory" || echo "  ❌ Missing inventory"
+
+echo "🎯 Ready for hybrid deployment!"
 ```
 
 ### 4. Safety Prerequisites (3 minutes)
@@ -84,38 +106,71 @@ done
 
 ## 🎯 Decision Matrix
 
-Based on assessment results:
+| Connectivity | Config State | Repository | **Recommendation** |
+|--------------|--------------|------------|-------------------|
+| All ✅ | Symlinks Working | ✅ | **PROCEED** with hybrid approach |
+| All ✅ | Mixed/Broken | ✅ | **PROCEED** - hybrid will fix |
+| All ✅ | Any | ❌ | **FIX REPOSITORY** first |
+| Some ❌ | Any | Any | **RESTORE CONNECTIVITY** |
 
-| Connectivity | Health | Repository | Backup | **Recommendation** |
-|--------------|--------|------------|--------|-------------------|
-| All ✅ | All ✅ | ✅ | ✅ | **PROCEED** with deployment |
-| All ✅ | All ✅ | ✅ | ❌ | **CREATE BACKUP FIRST** |
-| All ✅ | Some ⚠️ | ✅ | ✅ | **CAUTION** - limited deployment |
-| Some ❌ | Any | Any | Any | **RESTORE CONNECTIVITY** |
-| Any | Any | ❌ | Any | **FIX REPOSITORY** |
-
-## 📋 Quick Deployment Plan Template
+## 📋 Modern Hybrid Deployment Plan
 
 **IF ALL SYSTEMS GREEN:**
 
+### **Phase 1: System Preparation** (5 minutes)
 ```bash
-# Deployment sequence from snitcher
-cd "$TEMP_DIR"  # Repository directory
+# Simple system-level setup (minimal ansible)
+cd colab-config/
 
-# 1. Create backup
-ansible-playbook ansible/playbooks/backup-verify.yml
+# Install chezmoi on all nodes
+for node in crtr prtr drtr; do
+    echo "Installing chezmoi on $node..."
+    ssh "$node" "curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"
+done
 
-# 2. Test on one node (director - least critical)
-ansible-playbook ansible/playbooks/deploy-omni-config.yml --limit drtr
+# Optional: Basic system-wide environment setup
+# ansible-playbook ansible/playbooks/system-environment.yml
+```
 
-# 3. Validate test
-ssh drtr 'source ~/.zshrc && echo "✅ Test successful"'
+### **Phase 2: Chezmoi Deployment** (10 minutes)
+```bash
+# Deploy omni-config via chezmoi (pure user-level)
+
+# 1. Copy omni-config source to cluster-nas
+scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
+
+# 2. Deploy to test node first (director - least critical)
+echo "Testing on director (drtr)..."
+ssh drtr "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"
+
+# 3. Validate test deployment
+echo "Testing shell functionality..."
+ssh drtr 'source ~/.zshrc && echo "✅ Chezmoi deployment successful"'
 
 # 4. Deploy to remaining nodes
-ansible-playbook ansible/playbooks/deploy-omni-config.yml --limit prtr,crtr
+for node in crtr prtr; do
+    echo "Deploying to $node..."
+    ssh "$node" "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"
+    ssh "$node" 'source ~/.zshrc && echo "✅ '$node' deployment successful"'
+done
+```
 
-# 5. Final validation
-ansible-playbook ansible/playbooks/cluster-health.yml
+### **Phase 3: Validation** (5 minutes)
+```bash
+# Comprehensive validation
+echo "=== DEPLOYMENT VALIDATION ==="
+
+for node in crtr prtr drtr; do
+    echo "Validating $node:"
+    ssh "$node" "
+        echo '  Shell: '\$(echo \$SHELL)
+        echo '  Modern tools: '\$(command -v eza >/dev/null && echo 'eza ✅' || echo 'eza ❌')
+        echo '  Chezmoi: '\$(chezmoi --version | head -1)
+        echo '  Config status: '\$(timeout 3 zsh -c 'source ~/.zshrc && echo SUCCESS' || echo 'TIMEOUT')
+    "
+done
+
+echo "🎉 Hybrid deployment complete!"
 ```
 
 ## 🚨 Emergency Stop Conditions
@@ -126,56 +181,71 @@ ansible-playbook ansible/playbooks/cluster-health.yml
 - Services fail to start
 - Users report shell access issues
 
-**Emergency Rollback:**
+## 🚨 Emergency Rollback
+
+**Simple rollback strategy:**
 ```bash
-# Quick restore from backup
-ssh crtr "cd /cluster-nas/backups/\$(ls -t | head -1) && ./restore.sh"
+# Quick rollback to previous state
+for node in crtr prtr drtr; do
+    ssh "$node" "
+        # Remove chezmoi configs
+        rm -rf ~/.local/share/chezmoi
+        
+        # Restore from backup if available
+        [[ -f ~/.zshrc.backup ]] && mv ~/.zshrc.backup ~/.zshrc
+        
+        echo '$node rolled back'
+    "
+done
 ```
 
 ## 📊 Quick Report Format
 
 ```
-CLUSTER ASSESSMENT REPORT
+HYBRID DEPLOYMENT REPORT
 ========================
 Timestamp: $(date)
 Agent: AI Agent from snitcher
+Approach: Hybrid (Minimal Ansible + Pure Chezmoi)
 
 Connectivity: [3/3] nodes accessible
-Health: [ALL OK | WARNINGS | CRITICAL]
-Repository: [VALID | INVALID]
-Backup: [RECENT | OLD | MISSING]
+System Setup: [COMPLETE/PARTIAL/FAILED]  
+User Configs: [COMPLETE/PARTIAL/FAILED]
+Validation: [ALL PASS/SOME ISSUES/FAILED]
 
-RECOMMENDATION: [PROCEED | HOLD | ABORT]
-RISK LEVEL: [LOW | MEDIUM | HIGH]
+RECOMMENDATION: [SUCCESS/INVESTIGATE/ROLLBACK]
+NEXT ACTION: [Monitor/Fix Issues/Rollback]
 
-Next Action: [Specific command or requirement]
+Deployment Method: Modern hybrid approach
+- System-level: Minimal preparation only
+- User-level: Pure chezmoi configuration
+- Risk Level: LOW (user-level changes only)
 ```
 
 ## 🔧 Troubleshooting Quick Fixes
 
-**SSH Connection Issues:**
+**Chezmoi Issues:**
 ```bash
-# Test SSH key
-ssh-add -l
-# Verify SSH config
-cat ~/.ssh/config | grep -A 5 "Host crtr"
+# Reinstall chezmoi
+ssh $node "curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"
+
+# Reset chezmoi state
+ssh $node "rm -rf ~/.local/share/chezmoi && ~/.local/bin/chezmoi init --source /cluster-nas/configs/colab-omni-config"
 ```
 
-**NFS Mount Issues:**
+**Configuration Issues:**
 ```bash
-# Check NFS status
-ssh crtr "systemctl status nfs-server"
-ssh prtr "mount | grep cluster-nas"
-```
+# Test configuration loading
+ssh $node "timeout 5 zsh -c 'source ~/.zshrc && echo SUCCESS'"
 
-**Repository Access Issues:**
-```bash
-# Test GitHub connectivity
-curl -s https://api.github.com/repos/IMUR/colab-config
-# Verify git configuration
-git config --list | grep user
+# Check chezmoi status
+ssh $node "~/.local/bin/chezmoi status"
 ```
 
 ---
 
-**For complete detailed procedures, see**: `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`
+**Deployment Time: ~20 minutes total**  
+**Risk Level: LOW** (user-level changes only)  
+**Rollback Time: ~5 minutes**
+
+**For detailed procedures, see**: `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`

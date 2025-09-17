@@ -6,12 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 This repository (`colab-config`) contains the complete infrastructure configuration for the 3-node Co-lab cluster. It serves as the authoritative source for cluster automation, universal configurations, and deployment procedures.
 
-## CURRENT STATUS: Infrastructure Configuration Repository ✅
+## CURRENT STATUS: Modern Hybrid Configuration Repository ✅
 
-**Repository Type**: Infrastructure Configuration Management
-**Scope**: 3-node cluster (cooperator, projector, director)
-**Management**: Ansible + Chezmoi hybrid approach
-**Safety Level**: Production-critical infrastructure
+**Repository Type**: Strategic Hybrid Configuration Management  
+**Scope**: 3-node cluster (cooperator, projector, director)  
+**Management**: **Modern Hybrid** - Minimal Ansible + Pure Chezmoi  
+**Safety Level**: Production-ready with user-level safety focus
 
 **Current Structure:**
 ```
@@ -50,23 +50,34 @@ colab-config/
 - **Caddy Proxy**: Web service routing and SSL (on cooperator)
 - **Ansible Controller**: Configuration management (from cooperator)
 
-## Configuration Management Strategy
+## Modern Hybrid Configuration Strategy
 
-### Current State (Stable Production)
-- **Universal Configs**: Deployed via symlinks to `/cluster-nas/configs/zsh/`
-- **Working System**: All 3 nodes functional with shared shell configurations
-- **Battle Tested**: Proven stable for daily operations
+### **Strategic Architecture** ✅ **ACTIVE**
 
-### Target State (Migration in Progress)
-- **Universal Configs**: Chezmoi-based omni-config deployment
-- **Enhanced Management**: Git-based configuration source of truth
-- **Node Templating**: Support for node-specific variations
+**System-Level (Minimal Ansible)**:
+- Package installation and system services  
+- Basic /etc/profile.d/ environment setup
+- Health monitoring and system validation
+- Minimal, focused, low-risk operations only
 
-### Migration Strategy (Zero Downtime)
-1. **Phase 1**: Repository establishment ✅
-2. **Phase 2**: Parallel testing (symlinks + chezmoi)
-3. **Phase 3**: Gradual cutover maintaining stability
-4. **Phase 4**: Full chezmoi deployment with symlink removal
+**User-Level (Pure Chezmoi)**:
+- Rich shell environments (.zshrc, .profile)
+- Modern CLI tools with smart detection
+- Cross-node consistency via templating
+- Node-specific customizations
+
+### **Why This Approach Works**
+- ✅ **Right Tool, Right Job**: Ansible for systems, Chezmoi for users
+- ✅ **Reduced Risk**: User-level changes vs dangerous system modifications
+- ✅ **Faster Deployment**: 20 minutes vs hours of complex orchestration  
+- ✅ **Easier Maintenance**: Simple chezmoi updates vs complex ansible playbooks
+- ✅ **Better Rollback**: Instant chezmoi revert vs system restoration
+
+### **Deployment Reality**
+- **20-minute deployment** from scratch
+- **User-level changes only** (SSH access preserved)
+- **Simple rollback procedure** (chezmoi reset)
+- **Production-ready** following 2024 best practices
 
 ## Working with This Repository
 
@@ -76,33 +87,45 @@ colab-config/
 - **Ansible**: Installed and configured
 - **Git**: For version control operations
 
-### Common Operations
+### **Modern Operations**
 
-#### Cluster Health Check
+#### **Primary: User Configuration Management (Chezmoi)**
 ```bash
-# Quick health assessment
+# Deploy/update user configurations (primary method)
+scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
+
+for node in crtr prtr drtr; do
+    ssh "$node" "chezmoi update"
+done
+
+# Validate deployment
+for node in crtr prtr drtr; do
+    ssh "$node" 'source ~/.zshrc && echo "✅ '$node' ready"'
+done
+```
+
+#### **Secondary: System-Level Operations (Minimal Ansible)**
+```bash
+# Health monitoring (minimal ansible usage)
 ansible-playbook ansible/playbooks/cluster-health.yml
 
-# Detailed status check
-ansible all -m setup -a "filter=ansible_load*"
+# System validation when needed
+ansible all -m ping  # Basic connectivity check
 ```
 
-#### Configuration Deployment
+#### **Safe Development Workflow**
 ```bash
-# Deploy infrastructure changes
-ansible-playbook ansible/playbooks/site.yml
+# 1. Test configuration changes
+ssh drtr "chezmoi diff"  # Preview changes on least critical node
 
-# Deploy universal configs (when migration complete)
-ansible-playbook ansible/playbooks/deploy-omni-config.yml
-```
+# 2. Apply to test node first
+ssh drtr "chezmoi apply"
 
-#### Backup and Safety
-```bash
-# Create backup before changes
-ansible-playbook ansible/playbooks/backup-verify.yml
+# 3. Validate functionality
+ssh drtr 'timeout 5 zsh -c "source ~/.zshrc && echo SUCCESS"'
 
-# Verify backup integrity
-ls -la /cluster-nas/backups/$(date +%Y%m%d)*
+# 4. Deploy cluster-wide if successful
+for node in crtr prtr; do ssh "$node" "chezmoi apply"; done
 ```
 
 ### Directory Deep Dive
@@ -140,52 +163,88 @@ ls -la /cluster-nas/backups/$(date +%Y%m%d)*
 - **Security Trade-off**: Acceptable within trusted cluster network
 - **Cluster Group**: GID 2000 provides shared access without UID conflicts
 
-### Safety Protocols
+### **Modern Safety Protocols**
 
-#### Before Making Changes
-1. **Always create backup**: `ansible-playbook ansible/playbooks/backup-verify.yml`
-2. **Test on single node**: Use `--limit drtr` for testing
-3. **Verify current state**: Run health checks first
-4. **Have rollback plan**: Know how to restore from backup
+#### **Before Making Changes (Simple)**
+1. **Test on director first**: `ssh drtr "chezmoi diff"` - preview changes
+2. **Validate functionality**: `ssh drtr 'source ~/.zshrc && echo SUCCESS'`
+3. **Check system health**: `ansible-playbook ansible/playbooks/cluster-health.yml` (optional)
+4. **User-level safety**: No system modification risks
 
-#### Emergency Procedures
-- **Configuration Restore**: `/cluster-nas/backups/YYYYMMDD_HHMMSS/restore.sh`
-- **Service Restart**: `ansible-playbook ansible/playbooks/restart-services.yml`
-- **Emergency Access**: Physical console on cooperator or web terminal
+#### **Emergency Procedures (Low Risk)**
+```bash
+# Quick rollback (primary method)
+for node in crtr prtr drtr; do
+    ssh "$node" "
+        # Reset chezmoi to previous state  
+        chezmoi forget --force
+        rm -rf ~/.local/share/chezmoi
+        
+        # Restore from backup if needed
+        [[ -f ~/.zshrc.backup ]] && mv ~/.zshrc.backup ~/.zshrc
+        
+        echo '$node rolled back'
+    "
+done
+```
 
-#### Rollback Strategy
-- **Symlink Restore**: Revert to known working symlink configuration
-- **Backup Restoration**: Full restore from daily automated backups
-- **Service Recovery**: Individual service restart and validation
+#### **Why Recovery is Safer**
+- ✅ **User-level only**: Configuration errors won't break SSH access
+- ✅ **Fast rollback**: Seconds vs complex system restoration  
+- ✅ **Simple validation**: `source ~/.zshrc` test vs full system checks
+- ✅ **Isolated impact**: Shell configs don't affect critical services
 
 ## AI Agent Integration
 
-### For AI Agents Operating from Snitcher
-- **Quick Assessment**: Use `AI-AGENT-QUICKSTART.md` for 10-minute evaluation
-- **Full Deployment**: Follow `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`
-- **Safety First**: All procedures designed for maximum caution
+### **For AI Agents Operating from Snitcher**
+- **20-minute Assessment**: Use updated `AI-AGENT-QUICKSTART.md` for hybrid deployment
+- **Comprehensive Guide**: Follow `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`  
+- **Modern Approach**: Hybrid strategy - minimal ansible + pure chezmoi
+- **Low Risk**: User-level changes only, SSH access preserved
 
-### Decision Authority
-- **Green Light**: All systems accessible, healthy, and backed up
-- **Yellow Light**: Partial deployment possible with increased caution
-- **Red Light**: Abort deployment, resolve prerequisites first
+### **Decision Authority (Simplified)**
+- **Green Light**: All nodes accessible → **PROCEED** with hybrid deployment  
+- **Yellow Light**: Partial connectivity → Deploy to accessible nodes only
+- **Red Light**: Major connectivity issues → Resolve access first
 
-## Development Guidelines
+### **Deployment Confidence**
+- ✅ **Low Risk**: User-level configurations only
+- ✅ **Fast Recovery**: Simple chezmoi rollback vs complex system restore
+- ✅ **Proven Approach**: Following established best practices  
+- ✅ **Minimal Dependencies**: No complex ansible orchestration required
 
-### Code Changes
-- **Ansible Playbooks**: Always test with `--check` and `--diff` first
-- **Configuration Templates**: Validate templating logic before deployment
-- **Shell Scripts**: Test on single node before cluster-wide deployment
+## **Modern Development Guidelines**
 
-### Documentation
-- **Architecture Changes**: Update `documentation/architecture/README.md`
-- **Procedure Updates**: Maintain `documentation/procedures/` accuracy
-- **README Sync**: Keep main README.md current with changes
+### **Configuration Changes (Primary)**
+```bash
+# User configuration workflow (main method)
+1. Edit omni-config/ files locally
+2. Test changes: git diff, syntax validation  
+3. Deploy to test node: scp + ssh drtr "chezmoi apply"
+4. Validate: ssh drtr 'source ~/.zshrc && echo SUCCESS'
+5. Deploy cluster-wide: for node in crtr prtr; do ssh "$node" "chezmoi apply"; done
+```
 
-### Version Control
-- **Commit Messages**: Descriptive, include impact assessment
-- **Branching**: Use feature branches for major changes
-- **Testing**: Validate changes before merging to main
+### **System Changes (Minimal Use)**
+```bash  
+# Only when system-level changes required
+1. Edit ansible playbooks minimally
+2. Test with --check --diff first
+3. Target specific nodes with --limit
+4. Validate system health afterward
+```
+
+### **Version Control Best Practices**
+- **User configs**: Primary development in omni-config/
+- **System configs**: Minimal ansible changes only
+- **Documentation**: Keep procedures updated
+- **Testing**: Always test on director (drtr) first
+
+### **Development Philosophy**
+- ✅ **User-first**: Focus on omni-config for rich user experience
+- ✅ **System-minimal**: Use ansible only when absolutely necessary
+- ✅ **Safety-focused**: User-level changes preserve SSH access
+- ✅ **Fast iteration**: Quick chezmoi updates vs slow ansible runs
 
 ## Monitoring and Maintenance
 

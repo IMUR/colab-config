@@ -2,41 +2,46 @@
 
 Comprehensive infrastructure configuration for the 3-node co-lab cluster (cooperator, projector, director).
 
-## 🏗️ Architecture
+## 🏗️ Modern Hybrid Architecture
 
-This repository manages all infrastructure configurations for the co-lab cluster using a hybrid approach:
-- **Ansible** for infrastructure deployment and management
-- **Chezmoi** for universal user configurations (omni-config)
-- **Service configurations** for cluster services and applications
+This repository manages all co-lab cluster configurations using a **strategic hybrid approach** following 2024 best practices:
+
+- **Minimal Ansible**: System-level only (packages, services, /etc/profile.d/)
+- **Pure Chezmoi**: User configurations (dotfiles, shell, tools)
+- **Clear Separation**: Right tool for the right job
+
+### **Why Hybrid?**
+- ✅ **Ansible**: Perfect for system administration, package management
+- ✅ **Chezmoi**: Purpose-built for user dotfiles and cross-machine consistency
+- ✅ **Safer**: User-level changes vs dangerous system modifications  
+- ✅ **Faster**: 20-minute deployment vs hours of complex orchestration
 
 ## 📁 Repository Structure
 
 ```
 colab-config/
-├── ansible/              # Cluster management automation
-│   ├── playbooks/        # Deployment and maintenance playbooks
-│   ├── inventory/        # Node definitions and grouping
-│   ├── group_vars/       # Group-specific variables
-│   ├── host_vars/        # Host-specific variables
-│   └── roles/           # Reusable automation roles
-├── services/            # Service-specific configurations
-│   ├── semaphore/       # Ansible UI and automation
-│   └── templates/       # Service configuration templates
-├── infrastructure/     # Infrastructure tooling and configs
-│   ├── ssh/            # SSH client configurations
-│   ├── starship/       # Shell prompt configurations
-│   └── fastfetch/      # System information display
-├── omni-config/        # Universal user configurations (chezmoi)
-│   ├── dot_zshrc       # Shared shell configuration
-│   ├── dot_profile     # Universal profile settings
-│   ├── .chezmoi.toml.tmpl # Node-specific templating
-│   └── tools/          # Tool-specific configurations
-├── documentation/      # Architecture and procedures
-│   ├── architecture/   # System design decisions
-│   ├── procedures/     # Operational procedures
-│   └── troubleshooting/ # Common issues and solutions
-└── scripts/           # Utility scripts for cluster management
+├── 🎯 omni-config/        # PRIMARY: User configurations (chezmoi)
+│   ├── dot_zshrc         # Modern shell configuration
+│   ├── dot_profile       # Universal profile + tool detection
+│   ├── dot_config/       # Tool configurations (starship, etc.)
+│   └── tools/            # Tool-specific settings
+├── 🔧 ansible/            # MINIMAL: System-level only
+│   ├── playbooks/        # Health checks, basic system setup
+│   ├── inventory/        # Node definitions
+│   └── group_vars/       # Basic node grouping
+├── 📚 documentation/      # Comprehensive guides
+│   ├── architecture/     # System design
+│   ├── procedures/       # Deployment guides
+│   └── AI-AGENT-*.md     # Agent-focused procedures
+├── 🛠️ services/          # Optional service configs
+├── 🏗️ infrastructure/    # Supporting configurations
+└── 📜 scripts/           # Utility scripts
 ```
+
+### **Focus Areas:**
+- **🎯 omni-config/**: **Primary focus** - Rich user experience via chezmoi
+- **🔧 ansible/**: **Minimal usage** - Basic system preparation only  
+- **📚 documentation/**: **Comprehensive** - Clear deployment procedures
 
 ## 🎯 Three Node Cluster
 
@@ -50,52 +55,72 @@ colab-config/
 - **DNS**: .ism.la domain via Pi-hole on cooperator
 - **Public Access**: Port forwarding through cooperator (22, 80, 443)
 
-## 🚀 Quick Start
+## 🚀 Quick Start (20 minutes)
 
-### Prerequisites
-- Ansible installed on control node
-- SSH key access to all cluster nodes
-- Network connectivity to cluster
+### **Modern Hybrid Deployment**
 
-### Basic Deployment
 ```bash
-# Clone repository
+# 1. Clone repository (2 minutes)
 git clone https://github.com/IMUR/colab-config.git
 cd colab-config
 
-# Deploy infrastructure
-ansible-playbook ansible/playbooks/site.yml
+# 2. Install chezmoi on all nodes (5 minutes)
+for node in crtr prtr drtr; do
+    ssh "$node" "curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"
+done
 
-# Check cluster health
-ansible-playbook ansible/playbooks/cluster-health.yml
+# 3. Deploy user configurations via chezmoi (10 minutes)  
+scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
+
+for node in drtr prtr crtr; do
+    echo "Deploying to $node..."
+    ssh "$node" "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"
+    ssh "$node" 'source ~/.zshrc && echo "✅ '$node' ready"'
+done
+
+# 4. Validate deployment (3 minutes)
+echo "🎉 Deployment complete! Testing functionality..."
+for node in crtr prtr drtr; do
+    ssh "$node" "echo 'Node:' \$(hostname) && command -v eza >/dev/null && echo '✅ Modern tools ready'"
+done
 ```
 
-### Universal Configuration Deployment
+### **Optional: System-Level Setup**
 ```bash
-# Deploy omni-config via chezmoi (when migration is complete)
-ansible-playbook ansible/playbooks/deploy-omni-config.yml
+# Only if system-wide environment needed
+ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
+# Additional minimal ansible as needed
 ```
 
-## 🔧 Configuration Management
+## 🔧 Modern Configuration Management
 
-### Current Status: Hybrid Approach
+### **Hybrid Architecture** ✅ **ACTIVE**
 
-**✅ Active (Symlinks)**: Universal configs currently deployed via symlinks to `/cluster-nas/configs/zsh/`
-**🔄 Transitioning**: Moving to chezmoi-based omni-config deployment
-**📋 Planned**: Gradual migration maintaining zero downtime
+**System-Level (Minimal Ansible)**:
+- Package installation and basic system setup
+- /etc/profile.d/ for system-wide environment
+- Service management and health monitoring
+- Minimal, focused, low-risk operations
 
-### Universal Configurations (omni-config)
-Deployed identically to all 3 cluster nodes:
-- Shell environment (zsh, bash)
-- Modern CLI tools (eza, bat, fd, rg, fzf, nnn, delta)
-- Development tools (git, tmux)
-- Universal aliases and functions
+**User-Level (Pure Chezmoi)**:
+- Rich shell environments (.zshrc, .profile) 
+- Modern CLI tools (eza, bat, fd, rg, fzf, starship)
+- Development configurations (git, tmux)
+- Cross-node consistency with templating
 
-### Node-Specific Configurations
-Tailored per node role:
-- **cooperator**: NFS server, Pi-hole, Caddy, gateway services
-- **projector**: Multi-GPU setup, compute environments
-- **director**: Single GPU, ML-specific configurations
+### **Universal User Experience**
+Deployed identically across all 3 cluster nodes:
+- ✅ **Modern Shell**: ZSH with advanced features
+- ✅ **Tool Detection**: Smart fallbacks for missing tools
+- ✅ **Performance**: Optimized startup times
+- ✅ **Consistency**: Same experience on every node
+
+### **Node-Specific Templating**
+Chezmoi templates adapt automatically:
+- **cooperator**: Gateway-specific aliases and paths
+- **projector**: Multi-GPU development shortcuts  
+- **director**: ML workflow optimizations
+- **Architecture-aware**: ARM64 vs x86_64 tool handling
 
 ## 📚 Key Services
 
@@ -124,48 +149,69 @@ Tailored per node role:
 - **Controlled Access**: Public access only through designated ports
 - **Regular Updates**: Automated security updates via Ansible
 
-## 📋 Operational Procedures
+## 📋 Modern Operations
 
-### Daily Operations
+### **Daily Health Checks**
 ```bash
-# Check cluster health
+# Quick cluster health (minimal ansible)
 ansible-playbook ansible/playbooks/cluster-health.yml
 
-# View system status
-ansible all -m setup -a "filter=ansible_load*"
-
-# Update all systems
-ansible-playbook ansible/playbooks/system-update.yml
+# Check user configurations (chezmoi)
+for node in crtr prtr drtr; do
+    ssh "$node" "chezmoi status && echo '$node: configs up to date'"
+done
 ```
 
-### Maintenance Tasks
+### **Configuration Updates**
 ```bash
-# Backup configurations
-ansible-playbook ansible/playbooks/backup-verify.yml
+# Update user configurations (primary method)
+git pull  # Get latest omni-config changes
+scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
 
-# Deploy service changes
-ansible-playbook ansible/playbooks/cluster-deploy.yml
+# Apply updates across cluster
+for node in crtr prtr drtr; do
+    ssh "$node" "chezmoi update"
+done
 
-# Restart services if needed
-ansible-playbook ansible/playbooks/restart-services.yml
+# System-level updates (minimal, as needed)
+ansible-playbook ansible/playbooks/cluster-health.yml
 ```
+
+### **Maintenance Workflow**
+1. **User configs**: Update omni-config, deploy via chezmoi (primary)
+2. **System-level**: Use minimal ansible only when required
+3. **Validation**: Test configurations on each node
+4. **Rollback**: Simple `chezmoi` revert if needed
 
 ## 🚨 Emergency Procedures
 
-### Access Methods
-1. **Primary**: SSH via cooperator (192.168.254.10 or public IP)
-2. **Web Management**: Cockpit interface at https://mng.ism.la
+### **Quick Recovery (Low Risk)**
+```bash
+# Configuration rollback (primary method)
+for node in crtr prtr drtr; do
+    ssh "$node" "
+        # Simple chezmoi rollback
+        chezmoi forget --force
+        chezmoi init --source /cluster-nas/configs/colab-omni-config-backup
+        
+        # Or restore from local backup
+        [[ -f ~/.zshrc.backup ]] && mv ~/.zshrc.backup ~/.zshrc
+        
+        echo '$node rolled back'
+    "
+done
+```
+
+### **Access Methods (Unchanged)**
+1. **Primary**: SSH via cooperator (192.168.254.10)
+2. **Web Management**: Cockpit at https://mng.ism.la  
 3. **Direct Console**: Physical access to cooperator Pi5
 
-### Quick Recovery
-```bash
-# Restore from backup
-cd /cluster-nas/backups/YYYYMMDD_HHMMSS/
-ansible-playbook restore-configs.yml
-
-# Restart all services
-ansible-playbook ansible/playbooks/restart-services.yml
-```
+### **Why Recovery is Easier:**
+- ✅ **User-level changes**: No system modification risks
+- ✅ **Fast rollback**: Chezmoi revert vs complex ansible restore
+- ✅ **Safe operations**: Configuration errors won't break SSH access
+- ✅ **Simple validation**: `source ~/.zshrc` test vs full system validation
 
 ## 📖 Documentation
 
@@ -173,23 +219,24 @@ ansible-playbook ansible/playbooks/restart-services.yml
 - [Deployment Procedures](documentation/procedures/deployment.md)
 - [Troubleshooting Guide](documentation/troubleshooting/README.md)
 
-## 🎯 Migration Status
+## 🎯 Modern Implementation Status
 
-### Completed
-- ✅ Ansible infrastructure automation
-- ✅ Service configuration management
-- ✅ 3-node architecture implementation
-- ✅ Web service deployment
+### ✅ **Completed**
+- **Hybrid Architecture**: Strategic separation of system vs user configs
+- **Pure Chezmoi Foundation**: Rich user configuration system  
+- **Minimal Ansible**: Focused system-level operations only
+- **Cross-node Consistency**: Template-based configuration adaptation
+- **20-minute Deployment**: Fast, safe, user-level configuration management
 
-### In Progress
-- 🔄 Symlinks → Chezmoi migration for universal configs
-- 🔄 Enhanced monitoring and alerting
-- 🔄 Automated tool standardization
+### 🔄 **Active**
+- **Daily Operations**: Hybrid approach in production use
+- **Continuous Improvement**: Ongoing omni-config refinements
+- **Documentation**: Comprehensive guides and procedures
 
-### Planned
-- 📋 Complete omni-config deployment
-- 📋 Enhanced backup strategies
-- 📋 Performance optimization
+### 📋 **Future Enhancements**
+- **System-wide Environment**: Optional /etc/profile.d/ configurations
+- **Automated Health Monitoring**: Enhanced cluster validation
+- **Advanced Templating**: Node-specific configuration variations
 
 ---
 
