@@ -1,42 +1,41 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the Co-lab cluster infrastructure configuration repository.
+This file provides guidance when working with the Co-lab cluster infrastructure configuration repository.
 
 ## Repository Overview
 
-This repository (`colab-config`) contains the complete infrastructure configuration for the 3-node Co-lab cluster. It serves as the authoritative source for cluster automation, universal configurations, and deployment procedures.
+This repository (`colab-config`) contains comprehensive infrastructure configuration for the 3-node Co-lab cluster. It serves as the authoritative source for cluster automation, user environment configurations, service management, and deployment procedures.
 
-## CURRENT STATUS: Modern Hybrid Configuration Repository ✅
+## CURRENT STATUS: Strategic Hybrid Configuration Repository ✅
 
-**Repository Type**: Strategic Hybrid Configuration Management  
-**Scope**: 3-node cluster (cooperator, projector, director)  
-**Management**: **Modern Hybrid** - Minimal Ansible + Pure Chezmoi  
-**Safety Level**: Production-ready with user-level safety focus
+**Repository Type**: Comprehensive Infrastructure Configuration Management  
+**Scope**: 3-node cluster (cooperator, projector, director)
+**Methodology**: **Strategic Hybrid** - Minimal Ansible + Pure Chezmoi + Service Configs  
+**Safety Level**: Production-ready with layered risk management
 
-**Current Structure:**
+**Repository Structure:**
 ```
 colab-config/
-├── ansible/                    # Cluster automation (Ansible)
-├── services/                   # Service configurations
-├── infrastructure/             # Infrastructure tooling
-├── omni-config/               # Universal configurations (Chezmoi)
-├── documentation/             # Architecture and procedures
-├── scripts/                   # Utility scripts
-├── AI-AGENT-QUICKSTART.md     # AI agent deployment guide
-└── CLAUDE.md                  # This file
+├── 🎯 omni-config/             # PRIMARY: User environments (chezmoi)
+├── 🔧 ansible/                 # MINIMAL: System health & monitoring  
+├── 🛠️ services/                # Service-specific configurations
+├── 🏗️ infrastructure/          # SSH, tooling, system configs
+├── 📜 scripts/                 # Utility automation scripts
+├── 📚 documentation/           # Architecture and deployment guidance
+└── 🧭 AI-AGENT-QUICKSTART.md   # Agent assessment guide
 ```
 
 ## Cluster Architecture
 
-**Core Cluster Nodes (3+1 Architecture):**
+**Core Cluster Nodes:**
 - **cooperator (crtr)** - Gateway, NFS server, DNS, services (Pi5, 16GB RAM, 192.168.254.10)
 - **projector (prtr)** - Compute power, multi-GPU (x86, 128GB RAM, 192.168.254.20)
 - **director (drtr)** - ML platform, single GPU (x86, 64GB RAM, 192.168.254.30)
 
-**Mobile Access Point (Separate Configuration):**
-- **snitcher** - Remote access laptop (has its own repository: snitcher-config)
+**Mobile Access Point (Independent):**
+- **snitcher** - Remote access laptop (separate snitcher-config repository)
 
-## Key Infrastructure Services
+## Infrastructure Services Context
 
 ### Web Interfaces (via cooperator gateway)
 - **Semaphore**: https://cfg.ism.la (Ansible automation UI)
@@ -44,261 +43,202 @@ colab-config/
 - **SSH Terminal**: https://ssh.ism.la (Web-based terminal)
 - **DNS Management**: https://dns.ism.la (Pi-hole interface)
 
-### Core Services
+### Core Infrastructure
 - **NFS Server**: Shared storage at `/cluster-nas` (on cooperator)
 - **Pi-hole DNS**: Internal `.ism.la` domain resolution (on cooperator)
 - **Caddy Proxy**: Web service routing and SSL (on cooperator)
-- **Ansible Controller**: Configuration management (from cooperator)
+- **Configuration Management**: Hybrid approach (minimal ansible + pure chezmoi)
 
-## Modern Hybrid Configuration Strategy
+## Strategic Hybrid Configuration Approach
 
-### **Strategic Architecture** ✅ **ACTIVE**
+### **Architectural Decision Context**
 
 **System-Level (Minimal Ansible)**:
-- Package installation and system services  
-- Basic /etc/profile.d/ environment setup
-- Health monitoring and system validation
-- Minimal, focused, low-risk operations only
+- Package installation and essential system services
+- Health monitoring and system validation capabilities
+- /etc/profile.d/ system-wide environment when needed
+- Focused, low-risk operations preserving system stability
 
 **User-Level (Pure Chezmoi)**:
-- Rich shell environments (.zshrc, .profile)
-- Modern CLI tools with smart detection
-- Cross-node consistency via templating
-- Node-specific customizations
+- Rich shell environments with modern tool integration
+- Cross-node consistency with intelligent tool detection
+- Node-specific customization through templating (when implemented)
+- User configuration domain with safe rollback capabilities
 
-### **Why This Approach Works**
-- ✅ **Right Tool, Right Job**: Ansible for systems, Chezmoi for users
-- ✅ **Reduced Risk**: User-level changes vs dangerous system modifications
-- ✅ **Faster Deployment**: 20 minutes vs hours of complex orchestration  
-- ✅ **Easier Maintenance**: Simple chezmoi updates vs complex ansible playbooks
-- ✅ **Better Rollback**: Instant chezmoi revert vs system restoration
+**Service & Infrastructure Management**:
+- Service-specific configurations in services/ directory
+- Infrastructure tooling and SSH configurations
+- Utility scripts for specialized cluster operations
+- Independent management appropriate to each domain
 
-### **Deployment Reality**
-- **20-minute deployment** from scratch
-- **User-level changes only** (SSH access preserved)
-- **Simple rollback procedure** (chezmoi reset)
-- **Production-ready** following 2024 best practices
+### **Strategic Advantages**
+```yaml
+Right Tool Selection:
+  - Ansible: System administration, monitoring, infrastructure
+  - Chezmoi: User dotfiles, cross-machine consistency
+  - Service configs: Domain-specific management
+
+Risk Management:
+  - User-level changes preserve SSH access
+  - System-level changes minimal and targeted
+  - Service configurations isolated from core infrastructure
+
+Operational Efficiency:
+  - Fast user configuration deployment
+  - Simple rollback procedures
+  - Clear separation of concerns
+  - Agent-friendly documentation and workflows
+```
 
 ## Working with This Repository
 
-### Prerequisites for Development
-- **Network Access**: Must be able to reach cluster nodes
-- **SSH Keys**: Ed25519 keys configured for cluster access
-- **Ansible**: Installed and configured
-- **Git**: For version control operations
+### **Configuration Management Workflows**
 
-### **Modern Operations**
-
-#### **Primary: User Configuration Management (Chezmoi)**
+#### **User Environment Management (Primary)**
 ```bash
-# Deploy/update user configurations (primary method)
-scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
+# Context: omni-config/ contains user shell and tool configurations
+# Approach: Pure chezmoi deployment for cross-node consistency
 
-for node in crtr prtr drtr; do
-    ssh "$node" "chezmoi update"
-done
-
-# Validate deployment
-for node in crtr prtr drtr; do
-    ssh "$node" 'source ~/.zshrc && echo "✅ '$node' ready"'
-done
-```
-
-#### **Secondary: System-Level Operations (Minimal Ansible)**
-```bash
-# Health monitoring (minimal ansible usage)
-ansible-playbook ansible/playbooks/cluster-health.yml
-
-# System validation when needed
-ansible all -m ping  # Basic connectivity check
-```
-
-#### **Safe Development Workflow**
-```bash
-# 1. Test configuration changes
+# Assessment suggestion:
 ssh drtr "chezmoi diff"  # Preview changes on least critical node
 
-# 2. Apply to test node first
-ssh drtr "chezmoi apply"
-
-# 3. Validate functionality
-ssh drtr 'timeout 5 zsh -c "source ~/.zshrc && echo SUCCESS"'
-
-# 4. Deploy cluster-wide if successful
-for node in crtr prtr; do ssh "$node" "chezmoi apply"; done
-```
-
-### Directory Deep Dive
-
-#### `ansible/` - Cluster Automation
-- **playbooks/**: Deployment and maintenance automation
-- **inventory/**: Node definitions (hosts.yml)
-- **group_vars/**: Configuration for node groups
-- **host_vars/**: Node-specific configurations
-- **roles/**: Reusable automation components
-
-#### `omni-config/` - Universal Configurations
-- **dot_zshrc**: Shared shell configuration for all nodes
-- **dot_profile**: Universal profile settings
-- **.chezmoi.toml.tmpl**: Node-specific templating logic
-- **tools/**: Tool-specific configurations
-
-#### `services/` - Service Configurations
-- **semaphore/**: Ansible UI configuration and data
-- **templates/**: Service configuration templates
-
-#### `documentation/` - Architecture and Procedures
-- **architecture/**: System design and decisions
-- **procedures/**: Operational procedures and guides
-
-### Critical UID/GID Information
-
-**Current Working Configuration (DO NOT CHANGE):**
-- **cooperator (crtr)**: UID 1001, GID 1001 + cluster(2000) - NFS ownership requirement
-- **projector (prtr)**: UID 1000, GID 1000 + cluster(2000) - standard user
-- **director (drtr)**: UID 1000, GID 1000 + cluster(2000) - standard user
-
-**File Permissions Strategy:**
-- **NFS Compatibility**: 777/666 permissions (world-writable) required for applications
-- **Security Trade-off**: Acceptable within trusted cluster network
-- **Cluster Group**: GID 2000 provides shared access without UID conflicts
-
-### **Modern Safety Protocols**
-
-#### **Before Making Changes (Simple)**
-1. **Test on director first**: `ssh drtr "chezmoi diff"` - preview changes
-2. **Validate functionality**: `ssh drtr 'source ~/.zshrc && echo SUCCESS'`
-3. **Check system health**: `ansible-playbook ansible/playbooks/cluster-health.yml` (optional)
-4. **User-level safety**: No system modification risks
-
-#### **Emergency Procedures (Low Risk)**
-```bash
-# Quick rollback (primary method)
+# Deployment suggestion:  
 for node in crtr prtr drtr; do
-    ssh "$node" "
-        # Reset chezmoi to previous state  
-        chezmoi forget --force
-        rm -rf ~/.local/share/chezmoi
-        
-        # Restore from backup if needed
-        [[ -f ~/.zshrc.backup ]] && mv ~/.zshrc.backup ~/.zshrc
-        
-        echo '$node rolled back'
-    "
+    ssh "$node" "chezmoi apply"  # Apply user configuration changes
+done
+
+# Validation approach:
+for node in crtr prtr drtr; do
+    ssh "$node" 'source ~/.zshrc && echo "$node: user environment ready"'
 done
 ```
 
-#### **Why Recovery is Safer**
-- ✅ **User-level only**: Configuration errors won't break SSH access
-- ✅ **Fast rollback**: Seconds vs complex system restoration  
-- ✅ **Simple validation**: `source ~/.zshrc` test vs full system checks
-- ✅ **Isolated impact**: Shell configs don't affect critical services
-
-## AI Agent Integration
-
-### **For AI Agents Operating from Snitcher**
-- **20-minute Assessment**: Use updated `AI-AGENT-QUICKSTART.md` for hybrid deployment
-- **Comprehensive Guide**: Follow `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`  
-- **Modern Approach**: Hybrid strategy - minimal ansible + pure chezmoi
-- **Low Risk**: User-level changes only, SSH access preserved
-
-### **Decision Authority (Simplified)**
-- **Green Light**: All nodes accessible → **PROCEED** with hybrid deployment  
-- **Yellow Light**: Partial connectivity → Deploy to accessible nodes only
-- **Red Light**: Major connectivity issues → Resolve access first
-
-### **Deployment Confidence**
-- ✅ **Low Risk**: User-level configurations only
-- ✅ **Fast Recovery**: Simple chezmoi rollback vs complex system restore
-- ✅ **Proven Approach**: Following established best practices  
-- ✅ **Minimal Dependencies**: No complex ansible orchestration required
-
-## **Modern Development Guidelines**
-
-### **Configuration Changes (Primary)**
+#### **System Infrastructure (Minimal Use)**
 ```bash
-# User configuration workflow (main method)
-1. Edit omni-config/ files locally
-2. Test changes: git diff, syntax validation  
-3. Deploy to test node: scp + ssh drtr "chezmoi apply"
-4. Validate: ssh drtr 'source ~/.zshrc && echo SUCCESS'
-5. Deploy cluster-wide: for node in crtr prtr; do ssh "$node" "chezmoi apply"; done
+# Context: ansible/ contains system monitoring and basic infrastructure
+# Constraint: Many playbooks have been removed due to safety concerns
+# Suggestion: Use only validated safe operations
+
+# Health assessment:
+ansible-playbook ansible/playbooks/cluster-health.yml  # If available
+
+# Basic connectivity:
+ansible all -m ping  # System reachability validation
 ```
 
-### **System Changes (Minimal Use)**
-```bash  
-# Only when system-level changes required
-1. Edit ansible playbooks minimally
-2. Test with --check --diff first
-3. Target specific nodes with --limit
-4. Validate system health afterward
-```
+#### **Service & Infrastructure Configuration**
+```bash
+# Context: services/ and infrastructure/ contain specialized configurations
+# Approach: Domain-specific management as needed
 
-### **Version Control Best Practices**
-- **User configs**: Primary development in omni-config/
-- **System configs**: Minimal ansible changes only
-- **Documentation**: Keep procedures updated
-- **Testing**: Always test on director (drtr) first
+# SSH configuration assessment:
+[[ -f "infrastructure/ssh/remote-access-config" ]] && echo "SSH gateway config available"
+
+# Service configuration evaluation:
+[[ -d "services/semaphore" ]] && echo "Semaphore automation config present"
+
+# Utility script availability:
+ls scripts/*.sh  # Available automation utilities
+```
 
 ### **Development Philosophy**
-- ✅ **User-first**: Focus on omni-config for rich user experience
-- ✅ **System-minimal**: Use ansible only when absolutely necessary
-- ✅ **Safety-focused**: User-level changes preserve SSH access
-- ✅ **Fast iteration**: Quick chezmoi updates vs slow ansible runs
 
-## Monitoring and Maintenance
+**User-First Approach**:
+- omni-config/ provides rich user experience foundation
+- User-level changes preserve system access and stability
+- Fast iteration through chezmoi vs complex system orchestration
 
-### Daily Operations
-- **Health Monitoring**: Automated via Ansible playbooks
-- **Backup Verification**: Daily automated backups with integrity checks
-- **Service Status**: Monitor via Cockpit web interface
-- **Resource Usage**: Track CPU, memory, disk via standard tools
+**System-Minimal Approach**:
+- Ansible usage limited to essential system operations
+- Health monitoring and basic infrastructure only
+- Avoid complex system modifications that introduce risks
 
-### Weekly Maintenance
-- **Security Updates**: Coordinated via Ansible automation
-- **Performance Review**: Resource utilization and optimization
-- **Backup Rotation**: Cleanup old backups, verify restore procedures
-- **Documentation Review**: Keep procedures current
+**Service-Specific Management**:
+- Service configurations managed independently
+- Infrastructure tooling separate from user environments
+- Utility scripts for specialized operations
 
-## Troubleshooting Common Issues
+## Critical Infrastructure Context
 
-### SSH Connectivity Problems
-- **Check SSH keys**: Verify ed25519 keys in place
-- **Network connectivity**: Test ping to all cluster nodes
-- **SSH config**: Validate `~/.ssh/config` for cluster hosts
+### **Current Working Configuration (Preserve)**
+```yaml
+UID/GID Strategy (DO NOT MODIFY):
+  - cooperator (crtr): UID 1001, GID 1001 + cluster(2000) - NFS ownership
+  - projector (prtr): UID 1000, GID 1000 + cluster(2000) - standard user
+  - director (drtr): UID 1000, GID 1000 + cluster(2000) - standard user
 
-### Ansible Execution Issues
-- **Inventory problems**: Validate `ansible-inventory --list`
-- **Playbook syntax**: Use `ansible-playbook --syntax-check`
-- **Connection testing**: Run `ansible all -m ping`
+File Permissions (NFS Compatibility):
+  - 777/666 permissions required for shared applications
+  - Security trade-off acceptable within trusted cluster network
+  - Cluster group (GID 2000) provides shared access without UID conflicts
+```
 
-### Configuration Deployment Failures
-- **Backup restoration**: Revert to known working state
-- **Single node testing**: Isolate issues with `--limit`
-- **Service restart**: Often resolves configuration loading issues
+### **Safety Context**
 
-### NFS Mount Issues
-- **Server status**: Check NFS server on cooperator
-- **Client mounts**: Verify `/cluster-nas` accessibility on all nodes
-- **Permissions**: Ensure proper UID/GID cluster membership
+**User-Level Safety (Primary Domain)**:
+- Configuration errors preserve SSH access
+- Fast rollback through chezmoi state management
+- Simple validation through shell source testing
+- Isolated impact - shell configs don't affect system services
 
-## Important Notes
+**System-Level Caution**:
+- Minimal ansible usage reduces system modification risks
+- Health monitoring provides visibility without changes
+- Service management isolated from user configuration deployment
 
-- **Production Environment**: This manages live cluster infrastructure
-- **Safety First**: Always backup before changes, test before full deployment
-- **Documentation**: Keep all changes documented and procedures updated
-- **Coordination**: Major changes should be planned and communicated
-- **Rollback Ready**: Every deployment should have a tested rollback plan
+## Repository Integration
+
+### **Configuration Domains**
+```yaml
+User Environments:
+  - Managed through omni-config/ and chezmoi deployment
+  - Cross-node consistency with node-specific adaptation
+  - Modern shell experience with tool detection and fallbacks
+
+System Infrastructure:
+  - Minimal ansible for essential system operations
+  - Health monitoring and connectivity validation
+  - Basic system preparation when needed
+
+Service Management:
+  - Service-specific configurations in services/
+  - Infrastructure tooling in infrastructure/
+  - Specialized automation through scripts/
+```
+
+### **Documentation Ecosystem**
+- **AI-AGENT-QUICKSTART.md**: Comprehensive assessment guide for agents
+- **documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md**: Complete hybrid strategy and implementation details
+- **omni-config/documentation/**: User environment design philosophy and technical details
+
+### **Agent Integration Context**
+
+**Assessment Approach**:
+- Multi-domain evaluation (user, system, services, infrastructure)
+- Risk-appropriate strategies for each configuration domain
+- Collaborative decision-making support through contextual guidance
+
+**Implementation Flexibility**:
+- Agents may choose appropriate scope based on cluster conditions
+- Multiple rollback and recovery options available
+- Clear separation of concerns supports targeted interventions
+
+**Documentation Philosophy**:
+- Context over commands - provide decision-making information
+- Collaborative language supporting multiple agent workflows
+- Honest assessment of current capabilities vs future possibilities
 
 ## Repository Relationships
 
-### Related Repositories
-- **snitcher-config**: Independent configuration for snitcher mobile access
-- **Original cluster-nas**: Parent directory structure (not version controlled)
+### **Related Infrastructure**
+- **snitcher-config**: Independent mobile access configuration
+- **Cluster NFS**: Shared storage infrastructure (`/cluster-nas`)
+- **Service Infrastructure**: Web interfaces, automation, monitoring
 
-### Data Flow
+### **Configuration Flow**
 - **Source of Truth**: This repository for infrastructure configuration
-- **Deployment Target**: `/cluster-nas/configs/` on cooperator
-- **Backup Storage**: `/cluster-nas/backups/` for safety and recovery
+- **User Deployment**: omni-config/ via chezmoi to user environments
+- **System Operations**: Minimal ansible for essential infrastructure
+- **Service Management**: Domain-specific configurations as needed
 
-This repository is designed for safe, reliable infrastructure management with maximum operational safety and clear rollback procedures.
+This repository supports comprehensive cluster infrastructure management through strategic tool selection and clear separation of concerns, enabling safe and efficient operations across all configuration domains.
