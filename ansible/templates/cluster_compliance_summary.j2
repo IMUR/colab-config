@@ -1,0 +1,62 @@
+{
+  "audit_metadata": {
+    "timestamp": "{{ audit_timestamp }}",
+    "audit_type": "cluster_alignment_compliance",
+    "total_nodes": {{ audit_nodes | length }},
+    "audited_nodes": {{ audit_nodes | list }},
+    "baseline_expectation": "post_sept_2025_standardization"
+  },
+  "standardization_targets": {
+    "critical_tools": {{ critical_tools | to_json }},
+    "cluster_group_gid": 2000,
+    "shared_claude_config": true,
+    "ansible_automation": true
+  },
+  "cluster_wide_status": {
+    "nodes_online": {{ audit_nodes | length }},
+    "nodes_with_critical_tools": "{{ hostvars | dict2items | selectattr('value.critical_tools_complete', 'defined') | selectattr('value.critical_tools_complete', 'equalto', true) | list | length }}",
+    "nodes_in_cluster_group": "{{ hostvars | dict2items | selectattr('value.user_in_cluster_group', 'defined') | selectattr('value.user_in_cluster_group', 'equalto', true) | list | length }}",
+    "nodes_with_nas_access": "{{ hostvars | dict2items | selectattr('value.nas_accessible', 'defined') | selectattr('value.nas_accessible', 'equalto', true) | list | length }}",
+    "nodes_fully_compliant": "{{ hostvars | dict2items | selectattr('value.standardization_compliant', 'defined') | selectattr('value.standardization_compliant', 'equalto', true) | list | length }}"
+  },
+  "compliance_score": {
+    "overall_percentage": "{{ ((hostvars | dict2items | selectattr('value.standardization_compliant', 'defined') | selectattr('value.standardization_compliant', 'equalto', true) | list | length) / (audit_nodes | length) * 100) | round(1) }}%",
+    "critical_tools_percentage": "{{ ((hostvars | dict2items | selectattr('value.critical_tools_complete', 'defined') | selectattr('value.critical_tools_complete', 'equalto', true) | list | length) / (audit_nodes | length) * 100) | round(1) }}%",
+    "cluster_integration_percentage": "{{ ((hostvars | dict2items | selectattr('value.cluster_integration_ok', 'defined') | selectattr('value.cluster_integration_ok', 'equalto', true) | list | length) / (audit_nodes | length) * 100) | round(1) }}%"
+  },
+  "non_compliant_nodes": [
+{% for host in audit_nodes %}
+{% if hostvars[host].standardization_compliant is defined and not hostvars[host].standardization_compliant %}
+    {
+      "hostname": "{{ host }}",
+      "issues": [
+{% if not hostvars[host].critical_tools_complete %}
+        "missing_critical_tools",
+{% endif %}
+{% if not hostvars[host].user_in_cluster_group %}
+        "not_in_cluster_group",
+{% endif %}
+{% if not hostvars[host].nas_accessible %}
+        "nas_not_accessible",
+{% endif %}
+{% if not hostvars[host].ansible_suite_complete %}
+        "incomplete_ansible_suite"
+{% endif %}
+      ]
+    }{{ ',' if not loop.last else '' }}
+{% endif %}
+{% endfor %}
+  ],
+  "recommendations": [
+{% if (hostvars | dict2items | selectattr('value.critical_tools_complete', 'defined') | selectattr('value.critical_tools_complete', 'equalto', true) | list | length) < (audit_nodes | length) %}
+    "Run tool-standardization.yml playbook to install missing critical tools",
+{% endif %}
+{% if (hostvars | dict2items | selectattr('value.user_in_cluster_group', 'defined') | selectattr('value.user_in_cluster_group', 'equalto', true) | list | length) < (audit_nodes | length) %}
+    "Add users to cluster group (GID 2000) on non-compliant nodes",
+{% endif %}
+{% if (hostvars | dict2items | selectattr('value.nas_accessible', 'defined') | selectattr('value.nas_accessible', 'equalto', true) | list | length) < (audit_nodes | length) %}
+    "Check NFS mount configuration on nodes without NAS access",
+{% endif %}
+    "Review detailed per-node reports for specific remediation steps"
+  ]
+}

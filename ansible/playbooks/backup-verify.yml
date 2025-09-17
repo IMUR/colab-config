@@ -1,0 +1,44 @@
+---
+- name: Verify Cluster Backups
+  hosts: cooperator
+  tasks:
+    - name: Check backup directory exists
+      stat:
+        path: /cluster-nas/backups
+      register: backup_dir
+
+    - name: Get latest backup
+      shell: ls -t /cluster-nas/backups | head -1
+      register: latest_backup
+      when: backup_dir.stat.exists
+
+    - name: Count backup files
+      shell: find /cluster-nas/backups -type f | wc -l
+      register: backup_count
+      when: backup_dir.stat.exists
+
+    - name: Get backup size
+      shell: du -sh /cluster-nas/backups | cut -f1
+      register: backup_size
+      when: backup_dir.stat.exists
+
+    - name: Test backup integrity
+      command: rsync -an /cluster-nas/configs/ /cluster-nas/backups/{{ latest_backup.stdout }}/configs/
+      register: rsync_test
+      when: backup_dir.stat.exists and latest_backup.stdout
+      ignore_errors: yes
+
+    - name: Report backup status
+      debug:
+        msg: |
+          Backup Status Report
+          ====================
+          Backup directory exists: {{ backup_dir.stat.exists }}
+          Latest backup: {{ latest_backup.stdout | default('None') }}
+          Total backup files: {{ backup_count.stdout | default('0') }}
+          Total backup size: {{ backup_size.stdout | default('0') }}
+          Integrity check: {{ 'PASSED' if rsync_test.rc|default(1) == 0 else 'FAILED' }}
+
+    - name: Run backup now if needed
+      command: /usr/local/bin/cluster-backup.sh
+      when: not latest_backup.stdout or latest_backup.stdout == ''

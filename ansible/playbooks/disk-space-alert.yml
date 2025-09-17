@@ -1,0 +1,45 @@
+---
+- name: Disk Space Monitoring
+  hosts: all
+  vars:
+    warning_threshold: 80
+    critical_threshold: 90
+  tasks:
+    - name: Get disk usage
+      shell: df -h / | awk 'NR==2 {print $5}' | sed 's/%//'
+      register: disk_usage
+      changed_when: false
+
+    - name: Check NFS usage on shared storage
+      shell: df -h /cluster-nas | awk 'NR==2 {print $5}' | sed 's/%//'
+      register: nfs_usage
+      when: "'/cluster-nas' is mount"
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Set alert level
+      set_fact:
+        alert_level: >-
+          {%- if disk_usage.stdout|int >= critical_threshold -%}
+          CRITICAL
+          {%- elif disk_usage.stdout|int >= warning_threshold -%}
+          WARNING
+          {%- else -%}
+          OK
+          {%- endif -%}
+
+    - name: Report disk status
+      debug:
+        msg: |
+          Node: {{ inventory_hostname }}
+          Root Disk Usage: {{ disk_usage.stdout }}% [{{ alert_level }}]
+          NFS Usage: {{ nfs_usage.stdout | default('N/A') }}%
+          
+    - name: Create alert file if critical
+      copy:
+        content: |
+          ALERT: {{ inventory_hostname }} disk usage at {{ disk_usage.stdout }}%
+          Time: {{ ansible_date_time.iso8601 }}
+        dest: /cluster-nas/alerts/disk_{{ inventory_hostname }}.alert
+      when: disk_usage.stdout|int >= critical_threshold
+      delegate_to: crtr

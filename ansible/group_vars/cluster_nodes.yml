@@ -1,0 +1,38 @@
+# Configuration for core cluster nodes (cooperator, projector, director)
+# These nodes are always on the local network with NFS access
+
+# Shared cluster configuration
+cluster_nas_path: /cluster-nas
+use_shared_configs: true
+require_nfs: true
+
+# Chezmoi configuration for cluster nodes
+chezmoi_enabled: true
+chezmoi_source_repo: https://github.com/IMUR/configs.git
+chezmoi_source_path: colab-omni-config
+
+# Tools expected on all cluster nodes
+required_tools:
+  - zsh
+  - tmux
+  - git
+  - ansible
+  - python3
+  - uv
+  - eza
+  - bat
+  - fd-find
+  - ripgrep
+  - fzf
+  - zoxide
+  - starship
+
+# Service requirements
+systemd_services:
+  - ssh
+  - networking
+
+# Cluster group membership
+cluster_group:
+  name: cluster
+  gid: 2000

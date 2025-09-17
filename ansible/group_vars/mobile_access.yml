@@ -1,0 +1,35 @@
+# Configuration for mobile access points (snitcher)
+# These nodes may be offline or on remote networks
+
+# No dependency on cluster NFS
+cluster_nas_path: /cluster-nas  # Optional, may not be mounted
+use_shared_configs: false
+require_nfs: false
+
+# Local configuration management
+local_config_backup: true
+offline_resilience: true
+
+# Minimal tool requirements for remote access
+required_tools:
+  - ssh
+  - git
+  - tmux
+  - vim
+  - curl
+  - python3
+
+# SSH jump host configuration
+ssh_jump_host: true
+ssh_agent_forwarding: true
+
+# No cluster services required
+systemd_services:
+  - ssh
+  - networking
+
+# Optional cluster group membership (when on local network)
+cluster_group:
+  name: cluster
+  gid: 2000
+  optional: true

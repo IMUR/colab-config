@@ -1,0 +1,83 @@
+---
+# Chezmoi Cross-Node Audit Playbook
+- name: Comprehensive Chezmoi Audit
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Check if chezmoi is installed
+      shell: which chezmoi || which ~/.local/bin/chezmoi || echo "not found"
+      register: chezmoi_installed
+      failed_when: false
+      changed_when: false
+      
+    - name: Get chezmoi version
+      shell: |
+        if command -v chezmoi >/dev/null 2>&1; then
+          chezmoi --version
+        elif command -v ~/.local/bin/chezmoi >/dev/null 2>&1; then
+          ~/.local/bin/chezmoi --version
+        else
+          echo "chezmoi not found"
+        fi
+      register: chezmoi_version
+      failed_when: false
+      changed_when: false
+      when: '"not found" not in chezmoi_installed.stdout'
+      
+    - name: Check chezmoi configuration
+      command: chezmoi config
+      register: chezmoi_config
+      failed_when: false
+      changed_when: false
+      when: chezmoi_installed.rc == 0
+      
+    - name: Check chezmoi status
+      command: chezmoi status
+      register: chezmoi_status
+      failed_when: false
+      changed_when: false
+      when: chezmoi_installed.rc == 0
+      
+    - name: Check chezmoi source directory
+      stat:
+        path: ~/.local/share/chezmoi
+      register: chezmoi_source_dir
+      
+    - name: List chezmoi source contents
+      command: ls -la ~/.local/share/chezmoi/
+      register: chezmoi_source_contents
+      failed_when: false
+      changed_when: false
+      when: chezmoi_source_dir.stat.exists
+      
+    - name: Check for chezmoi config file
+      stat:
+        path: ~/.config/chezmoi/chezmoi.toml
+      register: chezmoi_config_file
+      
+    - name: Read chezmoi config if exists
+      slurp:
+        src: ~/.config/chezmoi/chezmoi.toml
+      register: chezmoi_config_content
+      when: chezmoi_config_file.stat.exists
+      
+    - name: Check user environment
+      shell: |
+        echo "User: $(whoami)"
+        echo "Home: $HOME"
+        echo "Shell: $SHELL"
+        echo "Architecture: $(uname -m)"
+        echo "OS: $(uname -s)"
+      register: user_environment
+      changed_when: false
+      
+    - name: Generate audit report
+      debug:
+        msg: |
+          === {{ inventory_hostname }} ({{ ansible_user }}) ===
+          Chezmoi installed: {{ 'YES' if "not found" not in chezmoi_installed.stdout else 'NO' }}
+          Version: {{ chezmoi_version.stdout | default('N/A') }}
+          Source dir exists: {{ 'YES' if chezmoi_source_dir.stat.exists else 'NO' }}
+          Config file exists: {{ 'YES' if chezmoi_config_file.stat.exists else 'NO' }}
+          Environment: {{ user_environment.stdout_lines | join(', ') }}
+          Status: {{ chezmoi_status.stdout_lines | default(['N/A']) | join(' | ') }}

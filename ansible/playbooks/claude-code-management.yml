@@ -1,0 +1,81 @@
+---
+- name: Claude Code Shared Configuration Management
+  hosts: all
+  become: yes
+  vars:
+    claude_shared_path: /cluster-nas/claude-code/.claude-merged
+    cluster_gid: 2000
+    
+  tasks:
+    - name: Ensure cluster group exists
+      group:
+        name: cluster
+        gid: "{{ cluster_gid }}"
+        state: present
+    
+    - name: Add users to cluster group
+      user:
+        name: "{{ ansible_user }}"
+        groups: cluster
+        append: yes
+    
+    - name: Ensure Claude symlink exists for each user
+      file:
+        src: "{{ claude_shared_path }}"
+        dest: "/home/{{ ansible_user }}/.claude"
+        state: link
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      
+    - name: Fix Claude shared config permissions
+      delegate_to: "{{ groups['edge_services'][0] }}"
+      run_once: true
+      block:
+        - name: Set cluster group ownership
+          file:
+            path: "{{ claude_shared_path }}"
+            group: cluster
+            recurse: yes
+            
+        - name: Ensure group write permissions
+          file:
+            path: "{{ claude_shared_path }}"
+            mode: '0775'
+            recurse: yes
+            
+        - name: Fix credentials file specifically
+          file:
+            path: "{{ claude_shared_path }}/.credentials.json"
+            mode: '0664'
+          ignore_errors: yes
+    
+    - name: Install Node.js via nvm if missing
+      when: ansible_hostname == 'director'
+      become_user: "{{ ansible_user }}"
+      block:
+        - name: Check if nvm exists
+          stat:
+            path: "/home/{{ ansible_user }}/.nvm/nvm.sh"
+          register: nvm_check
+          
+        - name: Install Claude Code if nvm exists
+          shell: |
+            source ~/.nvm/nvm.sh
+            npm list -g @anthropic-ai/claude-code || npm install -g @anthropic-ai/claude-code
+          args:
+            executable: /bin/bash
+          when: nvm_check.stat.exists
+    
+    - name: Create Claude wrapper script
+      copy:
+        dest: /usr/local/bin/claude-wrapper
+        content: |
+          #!/bin/bash
+          # Claude wrapper to fix permissions after each run
+          /usr/local/bin/claude "$@"
+          CLAUDE_EXIT=$?
+          chmod -R 775 {{ claude_shared_path }} 2>/dev/null
+          chmod 664 {{ claude_shared_path }}/.credentials.json 2>/dev/null
+          exit $CLAUDE_EXIT
+        mode: '0755'
+      when: ansible_hostname in ['cooperator', 'projector', 'snitcher']

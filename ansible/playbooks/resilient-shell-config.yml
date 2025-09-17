@@ -1,0 +1,51 @@
+---
+- name: Deploy Resilient Shell Configuration
+  hosts: all
+  become: no
+  vars:
+    config_script: /cluster-nas/configs/zsh/setup-resilient-config.sh
+
+  tasks:
+    - name: Check if setup script exists
+      stat:
+        path: "{{ config_script }}"
+      delegate_to: localhost
+      run_once: true
+      register: script_stat
+
+    - name: Ensure setup script is available
+      fail:
+        msg: "Setup script not found at {{ config_script }}"
+      when: not script_stat.stat.exists
+      run_once: true
+
+    - name: Copy setup script to each node
+      copy:
+        src: "{{ config_script }}"
+        dest: "/tmp/setup-resilient-config.sh"
+        mode: '0755'
+
+    - name: Run resilient config setup
+      shell: |
+        /tmp/setup-resilient-config.sh
+      register: setup_result
+      changed_when: true
+
+    - name: Display setup result
+      debug:
+        msg: "{{ setup_result.stdout_lines }}"
+
+    - name: Test configuration loading
+      shell: |
+        timeout 2 zsh -c 'source ~/.zshrc 2>&1 && echo "SUCCESS: Config loads"' || echo "FALLBACK: Using minimal config"
+      register: test_result
+      changed_when: false
+
+    - name: Show test results
+      debug:
+        msg: "{{ inventory_hostname }}: {{ test_result.stdout }}"
+
+    - name: Clean up temporary script
+      file:
+        path: "/tmp/setup-resilient-config.sh"
+        state: absent

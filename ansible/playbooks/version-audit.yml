@@ -1,0 +1,82 @@
+---
+- name: Tool Version Audit
+  hosts: all
+  gather_facts: yes
+  vars:
+    audit_output_dir: "/tmp/version_audit_{{ ansible_date_time.epoch }}"
+    current_user: "{{ ansible_env.USER | default(ansible_user_id) }}"
+    is_local_node: "{{ current_user == ansible_user }}"
+
+  tasks:
+    - name: Create version audit output directory
+      file:
+        path: "{{ audit_output_dir }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Discover installed tools
+      shell: |
+        tools=""
+        for tool in ansible tmux jq git curl wget htop zsh bash fzf rg chezmoi starship atuin uv fd fdfind bat batcat dust ansible-playbook ansible-galaxy; do
+          if which $tool >/dev/null 2>&1; then
+            tools="$tools $tool"
+          fi
+        done
+        echo $tools
+      register: discovered_tools
+      changed_when: false
+      delegate_to: "{{ 'localhost' if is_local_node else inventory_hostname }}"
+      connection: "{{ 'local' if is_local_node else 'ssh' }}"
+
+    - name: Get versions for discovered tools
+      shell: "{{ item }} --version 2>/dev/null | head -1 || echo 'version_unavailable'"
+      register: tool_versions
+      loop: "{{ discovered_tools.stdout.split() }}"
+      changed_when: false
+      when: discovered_tools.stdout | length > 0
+      delegate_to: "{{ 'localhost' if is_local_node else inventory_hostname }}"
+      connection: "{{ 'local' if is_local_node else 'ssh' }}"
+
+    - name: Get system Python version
+      command: python3 --version
+      register: python_version
+      failed_when: false
+      changed_when: false
+
+    - name: Get system info
+      shell: |
+        echo "OS: $(lsb_release -d 2>/dev/null | cut -f2 || echo 'Unknown')"
+        echo "Kernel: $(uname -r)"
+        echo "Architecture: $(uname -m)"
+      register: system_info
+      changed_when: false
+
+    - name: Generate version audit report
+      copy:
+        content: |
+          {
+            "node": "{{ inventory_hostname }}",
+            "timestamp": "{{ ansible_date_time.iso8601 }}",
+            "system_info": {
+              "details": "{{ system_info.stdout_lines | join(', ') }}",
+              "python_version": "{{ python_version.stdout | default('not_available') }}"
+            },
+            "tool_versions": {
+          {% for result in tool_versions.results %}
+              "{{ result.item }}": "{{ result.stdout | regex_replace('\"', '\\"') }}"{{ ',' if not loop.last else '' }}
+          {% endfor %}
+            },
+            "version_summary": {
+              "total_tools_found": {{ tool_versions.results | length }},
+              "tools_with_versions": {{ tool_versions.results | selectattr('stdout', 'match', '^(?!version_unavailable).*') | list | length }},
+              "tools_without_versions": {{ tool_versions.results | selectattr('stdout', 'equalto', 'version_unavailable') | list | length }}
+            }
+          }
+        dest: "{{ audit_output_dir }}/{{ inventory_hostname }}_versions.json"
+      delegate_to: localhost
+
+    - name: Display version audit completion
+      debug:
+        msg: "Version audit completed for {{ inventory_hostname }}. Found {{ tool_versions.results | length }} tools. Results in {{ audit_output_dir }}/{{ inventory_hostname }}_versions.json"

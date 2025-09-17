@@ -1,0 +1,155 @@
+---
+# UID/GID Standardization Playbook
+# Standardizes all cluster users to UID 1001 for NFS compatibility
+# WARNING: This will disrupt running services - run during maintenance window
+
+- name: Standardize UID/GID across cluster nodes
+  hosts: all
+  become: yes
+  serial: 1  # Process one node at a time to minimize disruption
+  vars:
+    target_uid: 1001
+    target_gid: 1001
+    cluster_gid: 2000
+    cluster_users: ['crtr', 'prtr', 'drtr', 'snitcher']
+  
+  pre_tasks:
+    - name: Verify cluster group exists
+      group:
+        name: cluster
+        gid: "{{ cluster_gid }}"
+        state: present
+    
+    - name: Get current user UID
+      shell: id -u {{ ansible_user }}
+      register: current_uid
+      changed_when: false
+    
+    - name: Display current state
+      debug:
+        msg: "Node {{ inventory_hostname }}: User {{ ansible_user }} current UID {{ current_uid.stdout }}, target UID {{ target_uid }}"
+
+  tasks:
+    - name: Stop user services before UID change
+      block:
+        - name: Stop systemd user services
+          systemd:
+            scope: user
+            daemon_reload: yes
+          become_user: "{{ ansible_user }}"
+          ignore_errors: yes
+        
+        - name: Kill user processes
+          shell: "pkill -u {{ ansible_user }}"
+          ignore_errors: yes
+        
+        - name: Wait for processes to terminate
+          wait_for:
+            timeout: 10
+          delegate_to: localhost
+      when: current_uid.stdout != target_uid|string
+
+    - name: Change user UID/GID
+      block:
+        - name: Modify user primary group GID
+          group:
+            name: "{{ ansible_user }}"
+            gid: "{{ target_gid }}"
+            state: present
+        
+        - name: Modify user UID
+          user:
+            name: "{{ ansible_user }}"
+            uid: "{{ target_uid }}"
+            group: "{{ ansible_user }}"
+            groups: cluster,users
+            append: yes
+        
+        - name: Fix home directory ownership
+          file:
+            path: "/home/{{ ansible_user }}"
+            owner: "{{ ansible_user }}"
+            group: "{{ ansible_user }}"
+            recurse: yes
+        
+        - name: Fix process ownership in /proc (if any remain)
+          shell: "find /proc -maxdepth 1 -user {{ current_uid.stdout }} -type d -exec echo 'Process {} needs restart' \\;"
+          ignore_errors: yes
+          when: current_uid.stdout != target_uid|string
+      when: current_uid.stdout != target_uid|string
+
+  post_tasks:
+    - name: Fix NFS shared files ownership
+      block:
+        - name: Fix orphaned files in cluster-nas
+          shell: "find /cluster-nas -nouser -exec chown {{ target_uid }}:{{ cluster_gid }} {} +"
+          ignore_errors: yes
+        
+        - name: Fix old UID files in cluster-nas  
+          shell: "find /cluster-nas -uid {{ current_uid.stdout }} -exec chown {{ target_uid }}:{{ cluster_gid }} {} +"
+          ignore_errors: yes
+          when: current_uid.stdout != target_uid|string
+        
+        - name: Verify cluster-nas permissions
+          file:
+            path: /cluster-nas
+            owner: "{{ target_uid }}"
+            group: "{{ cluster_gid }}"
+            mode: '0775'
+            state: directory
+      when: inventory_hostname == 'crtr'  # Only run on NFS server
+
+    - name: Restart essential services
+      block:
+        - name: Start systemd user services
+          systemd:
+            scope: user
+            daemon_reload: yes
+          become_user: "{{ ansible_user }}"
+          ignore_errors: yes
+        
+        - name: Verify user can write to cluster-nas
+          file:
+            path: "/cluster-nas/test-{{ ansible_user }}-{{ ansible_date_time.epoch }}"
+            state: touch
+            owner: "{{ ansible_user }}"
+            group: cluster
+          register: write_test
+          ignore_errors: yes
+        
+        - name: Remove test file
+          file:
+            path: "/cluster-nas/test-{{ ansible_user }}-{{ ansible_date_time.epoch }}"
+            state: absent
+          when: write_test is succeeded
+
+    - name: Validation checks
+      block:
+        - name: Verify UID consistency
+          shell: "id -u {{ ansible_user }}"
+          register: final_uid
+          failed_when: final_uid.stdout != target_uid|string
+        
+        - name: Verify cluster group membership
+          shell: "groups {{ ansible_user }} | grep -q cluster"
+          register: cluster_membership
+          failed_when: cluster_membership.rc != 0
+        
+        - name: Report final state
+          debug:
+            msg: "SUCCESS: {{ inventory_hostname }} - {{ ansible_user }} UID={{ final_uid.stdout }}, cluster group member"
+
+# Final cluster-wide validation
+- name: Validate cluster UID consistency
+  hosts: all
+  tasks:
+    - name: Collect all UIDs
+      shell: "id -u {{ ansible_user }}"
+      register: all_uids
+    
+    - name: Verify all UIDs are identical
+      assert:
+        that:
+          - all_uids.stdout == "1001"
+        fail_msg: "UID inconsistency detected: {{ inventory_hostname }} has UID {{ all_uids.stdout }}"
+        success_msg: "UID consistency verified across cluster"

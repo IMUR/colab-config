@@ -1,0 +1,137 @@
+---
+# Dedicated ML Role - Long-running training and background tasks (drtr)
+# Focused on sustained workloads and background processing
+
+- name: Dedicated ML Configuration
+  hosts: dedicated_ml
+  become: yes
+  vars:
+    # ML-focused service configuration
+    training_environment: production
+    background_services:
+      - jupyter-server
+      - mlflow-server
+    
+    # Resource allocation for long tasks
+    gpu_memory_fraction: 0.9
+    cpu_allocation: "dedicated"
+    
+  tasks:
+    - name: Gather hardware facts
+      setup:
+        gather_subset:
+          - hardware
+          - processor
+      tags: [always]
+      
+    - name: Validate ML hardware requirements
+      assert:
+        that:
+          - ansible_processor_count >= 8
+          - ansible_memtotal_mb >= 32768
+        msg: "Insufficient resources for dedicated ML tasks"
+      tags: [validation]
+    
+    # GPU setup for ML training
+    - name: Detect training GPU
+      command: nvidia-smi --query-gpu=name,memory.total,utilization.gpu --format=csv,noheader,nounits
+      register: training_gpu
+      failed_when: false
+      changed_when: false
+      tags: [gpu_setup]
+      
+    - name: Configure GPU for sustained workloads
+      debug:
+        msg: "Training GPU: {{ training_gpu.stdout_lines | default(['No GPU detected']) }}"
+      tags: [gpu_setup]
+    
+    # Dedicated storage for ML workflows
+    - name: Setup ML workspace structure
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      loop:
+        - /ml-workspace
+        - /ml-workspace/datasets
+        - /ml-workspace/models
+        - /ml-workspace/experiments
+        - /ml-workspace/checkpoints
+        - /ml-workspace/outputs
+        - /ml-workspace/logs
+      tags: [ml_storage]
+    
+    # Mount cluster storage for shared resources
+    - name: Connect to cluster NAS
+      mount:
+        path: /cluster-nas
+        src: "192.168.254.10:/cluster-nas"
+        fstype: nfs4
+        opts: "rsize=1048576,wsize=1048576,hard,intr"
+        state: mounted
+      tags: [storage]
+    
+    # Environment for background processing
+    - name: Setup Python environment for ML
+      block:
+        - name: Check Python version
+          command: python3 --version
+          register: python_version
+          changed_when: false
+          
+        - name: Verify ML environment readiness
+          debug:
+            msg: "Python environment: {{ python_version.stdout }}"
+            
+      tags: [ml_environment]
+    
+    # Container support for ML workflows
+    - name: Ensure container runtime for ML
+      block:
+        - name: Check Docker availability
+          command: docker --version
+          register: docker_status
+          failed_when: false
+          changed_when: false
+          
+        - name: Enable Docker for ML workflows
+          systemd:
+            name: docker
+            state: started
+            enabled: yes
+          when: docker_status.rc == 0
+          
+      tags: [containers]
+    
+    # Resource monitoring for long tasks
+    - name: Configure resource monitoring
+      block:
+        - name: Check system load capacity
+          shell: |
+            echo "Load average: $(uptime | awk '{print $(NF-2), $(NF-1), $NF}')"
+            echo "Memory usage: $(free | awk '/^Mem:/ {printf "%.1f%%\n", $3*100/$2}')"
+            echo "GPU utilization: $(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null || echo 'N/A')"
+          register: resource_status
+          changed_when: false
+          
+        - name: Report dedicated ML node status
+          debug:
+            msg: "{{ resource_status.stdout_lines }}"
+            
+      tags: [health_check]
+    
+    # Placeholder for ML service deployment
+    - name: Prepare for ML training services
+      debug:
+        msg: "Dedicated ML node configured for long-running training tasks"
+      tags: [ml_services]
+    
+    # Log management for background tasks
+    - name: Setup logging for ML workflows
+      file:
+        path: /var/log/ml-workflows
+        state: directory
+        mode: '0755'
+      tags: [logging]

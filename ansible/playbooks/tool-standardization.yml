@@ -1,0 +1,99 @@
+---
+- name: Cluster Tool Standardization
+  hosts: all
+  become: yes
+  vars:
+    core_tools:
+      - tmux
+      - jq
+      - htop
+      - curl
+      - wget
+      - git
+      - ripgrep
+      - fzf
+      - fd-find
+      - bat
+      - zsh
+      - python3-pip
+      - python3-venv
+      - build-essential
+      - cmake
+      - pkg-config
+      
+    x86_only_tools:
+      - docker.io
+      
+    development_tools:
+      - ansible
+      - ansible-lint
+      - chezmoi
+      
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        
+    - name: Install core tools on all nodes
+      apt:
+        name: "{{ core_tools }}"
+        state: present
+        
+    - name: Install x86-specific tools
+      apt:
+        name: "{{ x86_only_tools }}"
+        state: present
+      when: ansible_architecture == "x86_64"
+      
+    - name: Install development tools
+      apt:
+        name: "{{ development_tools }}"
+        state: present
+      ignore_errors: yes
+      
+    - name: Ensure user bin directories exist
+      file:
+        path: "/home/{{ ansible_user }}/.local/bin"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+        
+    - name: Install UV for Python management
+      become_user: "{{ ansible_user }}"
+      shell: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+      args:
+        creates: "/home/{{ ansible_user }}/.local/bin/uv"
+        
+    - name: Create fd/bat symlinks for Debian naming
+      file:
+        src: "/usr/bin/{{ item.src }}"
+        dest: "/usr/local/bin/{{ item.dest }}"
+        state: link
+      loop:
+        - { src: "fdfind", dest: "fd" }
+        - { src: "batcat", dest: "bat" }
+      ignore_errors: yes
+      
+    - name: Install starship prompt
+      become_user: "{{ ansible_user }}"
+      shell: |
+        curl -sS https://starship.rs/install.sh | sh -s -- -y -b ~/.local/bin
+      args:
+        creates: "/home/{{ ansible_user }}/.local/bin/starship"
+        
+    - name: Install atuin for shell history
+      become_user: "{{ ansible_user }}"
+      shell: |
+        curl -LsSf https://setup.atuin.sh | sh -s -- --no-modify-path
+      args:
+        creates: "/home/{{ ansible_user }}/.local/bin/atuin"
+        
+    - name: Install zoxide for smart cd
+      become_user: "{{ ansible_user }}"
+      shell: |
+        curl -sSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+      args:
+        creates: "/home/{{ ansible_user }}/.local/bin/zoxide"

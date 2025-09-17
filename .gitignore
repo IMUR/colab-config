@@ -1,0 +1,96 @@
+# Sensitive and private files
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+known_hosts
+authorized_keys
+*.secret
+*.password
+*.token
+*.pat
+
+# Ansible sensitive files
+ansible/vault_pass
+ansible/vault_password
+**/vault.yml
+**/secrets.yml
+ansible/inventory/**/host_vars/**/vault.yml
+ansible/inventory/**/group_vars/**/vault.yml
+
+# Local backups and cache
+*.local-backup
+*.backup
+*.bak
+*.cache
+*.tmp
+.ansible/
+*.retry
+
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+
+# Logs
+*.log
+logs/
+*.out
+*.err
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.project
+.settings/
+
+# Personal notes and drafts
+*-draft.*
+*-notes.*
+personal/
+private/
+
+# Generated files
+*.generated
+.zcompdump*
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Service-specific sensitive configs
+services/**/config.json
+services/**/settings.json
+services/**/database.conf
+services/**/secrets.conf
+
+# But keep example configs
+!services/**/*.example
+!services/**/*.template
+!services/**/*.sample
+
+# Temporary files
+*.wrapper
+temp/
+temporary/

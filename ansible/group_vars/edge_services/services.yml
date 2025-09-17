@@ -1,0 +1,10 @@
+# Variables for all edge_services group members
+# This affects: cooperator
+
+# Service-specific settings for edge nodes
+dns_server: true
+reverse_proxy: true
+default_shell: "/bin/zsh"
+
+# Override example - this would override inventory setting
+# ansible_user: edge_user  # <-- uncomment to see precedence

@@ -1,0 +1,63 @@
+{
+  "audit_metadata": {
+    "timestamp": "{{ audit_timestamp }}",
+    "node_name": "{{ node_name }}",
+    "architecture": "{{ node_arch }}",
+    "ansible_user": "{{ node_user }}",
+    "ansible_version": "{{ ansible_version.full | default('unknown') }}"
+  },
+  "critical_tools": {
+{% for tool in critical_tools_status %}
+    "{{ tool.item }}": {
+      "present": {{ tool.rc == 0 | lower }},
+      "path": "{{ tool.stdout if tool.rc == 0 else 'not_found' }}",
+{% if tool.rc == 0 %}
+{% set version_result = versions_info | selectattr('item.stdout', 'equalto', tool.stdout) | first | default({}) %}
+      "version": "{{ version_result.stdout | default('version_check_failed') }}"
+{% else %}
+      "version": "not_installed"
+{% endif %}
+    }{{ ',' if not loop.last else '' }}
+{% endfor %}
+  },
+  "optional_tools": {
+{% for tool in optional_tools_status %}
+    "{{ tool.item }}": {
+      "present": {{ tool.rc == 0 | lower }},
+      "path": "{{ tool.stdout if tool.rc == 0 else 'not_found' }}",
+{% if tool.rc == 0 %}
+{% set version_result = versions_info | selectattr('item.stdout', 'equalto', tool.stdout) | first | default({}) %}
+      "version": "{{ version_result.stdout | default('version_check_failed') }}"
+{% else %}
+      "version": "not_installed"
+{% endif %}
+    }{{ ',' if not loop.last else '' }}
+{% endfor %}
+  },
+  "ansible_suite": {
+{% for tool in ansible_suite_status %}
+    "{{ tool.item }}": {
+      "present": {{ tool.rc == 0 | lower }},
+      "path": "{{ tool.stdout if tool.rc == 0 else 'not_found' }}"
+    }{{ ',' if not loop.last else '' }}
+{% endfor %}
+  },
+  "cluster_integration": {
+    "cluster_group_exists": {{ cluster_group_exists | lower }},
+    "user_in_cluster_group": {{ 'cluster' in group_membership | lower }},
+    "user_groups": "{{ group_membership }}",
+    "nas_accessible": {{ nas_accessible | lower }},
+    "claude_symlinked": {{ claude_symlinked | lower }},
+    "nfs_mounted": {{ nfs_mounted | lower }}
+  },
+  "debian_compatibility": {
+    "fd_available": "{{ debian_tools.split(' ')[0].split(':')[1] }}",
+    "bat_available": "{{ debian_tools.split(' ')[1].split(':')[1] }}"
+  },
+  "compliance_status": {
+    "critical_tools_complete": {{ (critical_tools_status | selectattr('rc', 'equalto', 0) | list | length) == (critical_tools | length) | lower }},
+    "ansible_suite_complete": {{ (ansible_suite_status | selectattr('rc', 'equalto', 0) | list | length) >= 3 | lower }},
+    "cluster_integration_ok": {{ (cluster_group_exists and ('cluster' in group_membership) and nas_accessible) | lower }},
+    "standardization_compliant": {{ ((critical_tools_status | selectattr('rc', 'equalto', 0) | list | length) == (critical_tools | length) and cluster_group_exists and ('cluster' in group_membership)) | lower }}
+  }
+}
