@@ -148,148 +148,141 @@ for node in crtr prtr drtr; do
 done
 ```
 
-## 🎯 Decision Matrix
+## 🎯 Implementation Considerations
 
-| Connectivity | Config State | Repository | **Recommendation** |
-|--------------|--------------|------------|-------------------|
-| All ✅ | Symlinks Working | ✅ | **PROCEED** with hybrid approach |
-| All ✅ | Mixed/Broken | ✅ | **PROCEED** - hybrid will fix |
-| All ✅ | Any | ❌ | **FIX REPOSITORY** first |
-| Some ❌ | Any | Any | **RESTORE CONNECTIVITY** |
+**Context**: Agents may choose different approaches based on cluster conditions discovered
 
-## 📋 Modern Hybrid Deployment Plan
+### **Configuration Strategy Decision Points**
 
-**IF ALL SYSTEMS GREEN:**
+| Connectivity | Config State | Infrastructure | **Agent Considerations** |
+|--------------|--------------|--------------|--------------------------|
+| All nodes accessible | Symlinks working | Complete | Consider chezmoi migration or maintain current state |
+| All nodes accessible | Mixed/broken configs | Complete | Hybrid approach likely beneficial |
+| Partial connectivity | Any | Complete | Focus on accessible nodes, plan for full coverage |
+| Poor connectivity | Any | Any | Address connectivity before configuration changes |
 
-### **Phase 1: System Preparation** (5 minutes)
+### **Implementation Pathways**
+
+**Chezmoi Deployment Approach**:
 ```bash
-# Simple system-level setup (minimal ansible)
-cd colab-config/
+# Context: omni-config/ contains shell configurations ready for chezmoi
+# Constraint: Requires chezmoi templating setup (.chezmoi.toml.tmpl missing)
+# Suggestion: Agents may complete chezmoi setup before deployment
 
-# Install chezmoi on all nodes
-for node in crtr prtr drtr; do
-    echo "Installing chezmoi on $node..."
-    ssh "$node" "curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"
-done
+# Verify omni-config readiness:
+[[ -f "omni-config/dot_zshrc" ]] && echo "Shell config: Available"
+[[ -f "omni-config/dot_profile" ]] && echo "Profile: Available with tool detection"
 
-# Optional: Basic system-wide environment setup
-# ansible-playbook ansible/playbooks/system-environment.yml
+# Note: chezmoi templating requires completion before deployment
+# Reference: See architecture documentation for templating requirements
 ```
 
-### **Phase 2: Chezmoi Deployment** (10 minutes)
+**System Environment Approach** (Optional):
 ```bash
-# Deploy omni-config via chezmoi (pure user-level)
+# Context: System-wide configurations may benefit from ansible management
+# Constraint: Many ansible playbooks are dangerous (see architecture docs)
+# Suggestion: Use only validated safe playbooks for system-level operations
 
-# 1. Copy omni-config source to cluster-nas
-scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
-
-# 2. Deploy to test node first (director - least critical)
-echo "Testing on director (drtr)..."
-ssh drtr "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"
-
-# 3. Validate test deployment
-echo "Testing shell functionality..."
-ssh drtr 'source ~/.zshrc && echo "✅ Chezmoi deployment successful"'
-
-# 4. Deploy to remaining nodes
-for node in crtr prtr; do
-    echo "Deploying to $node..."
-    ssh "$node" "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"
-    ssh "$node" 'source ~/.zshrc && echo "✅ '$node' deployment successful"'
-done
+# Safe ansible operations suggestion:
+ansible-playbook ansible/playbooks/cluster-health.yml  # Health monitoring
+# Caution: Avoid uid-standardization.yml, tool-standardization.yml, system-update.yml
 ```
 
-### **Phase 3: Validation** (5 minutes)
+**Service Configuration Management**:
 ```bash
-# Comprehensive validation
-echo "=== DEPLOYMENT VALIDATION ==="
+# Context: services/ and infrastructure/ contain additional configurations
+# Suggestion: Agents may evaluate service-specific needs independently
 
-for node in crtr prtr drtr; do
-    echo "Validating $node:"
-    ssh "$node" "
-        echo '  Shell: '\$(echo \$SHELL)
-        echo '  Modern tools: '\$(command -v eza >/dev/null && echo 'eza ✅' || echo 'eza ❌')
-        echo '  Chezmoi: '\$(chezmoi --version | head -1)
-        echo '  Config status: '\$(timeout 3 zsh -c 'source ~/.zshrc && echo SUCCESS' || echo 'TIMEOUT')
-    "
-done
+echo "=== Service Configuration Evaluation ==="
+[[ -d "services/semaphore" ]] && echo "Semaphore UI: Configuration available"
+[[ -f "infrastructure/ssh/remote-access-config" ]] && echo "SSH: Gateway configuration available"
 
-echo "🎉 Hybrid deployment complete!"
+# Note: Service configurations are separate from user environment deployment
 ```
 
-## 🚨 Emergency Stop Conditions
+## 🛡️ Safety Context & Recovery Options
 
-**ABORT DEPLOYMENT IF:**
-- Any node becomes unreachable during deployment
-- Configuration errors detected
-- Services fail to start
-- Users report shell access issues
+**Constraint**: Production cluster operations require careful consideration of impact
 
-## 🚨 Emergency Rollback
+### **Risk Assessment Context**
+```yaml
+User-Level Changes (omni-config):
+  Risk: Low - affects shell experience only
+  Impact: Individual user shells, preserves SSH access
+  Recovery: Simple file restoration or chezmoi reset
 
-**Simple rollback strategy:**
+System-Level Changes (ansible):
+  Risk: Variable - depends on specific playbook
+  Impact: Could affect entire node or cluster services
+  Recovery: May require system restoration or service restart
+
+Service Changes (services/, infrastructure/):
+  Risk: Medium - affects specific cluster services  
+  Impact: Web interfaces, automation, monitoring
+  Recovery: Service restart or configuration rollback
+```
+
+### **Recovery Options Available to Agents**
+
+**Configuration Rollback Suggestions**:
 ```bash
-# Quick rollback to previous state
-for node in crtr prtr drtr; do
-    ssh "$node" "
-        # Remove chezmoi configs
-        rm -rf ~/.local/share/chezmoi
-        
-        # Restore from backup if available
-        [[ -f ~/.zshrc.backup ]] && mv ~/.zshrc.backup ~/.zshrc
-        
-        echo '$node rolled back'
-    "
-done
+# Context: Multiple recovery pathways exist depending on change type
+
+# User configuration reversion (chezmoi):
+ssh $node "rm -rf ~/.local/share/chezmoi"  # Remove chezmoi state
+ssh $node "[[ -f ~/.zshrc.backup ]] && mv ~/.zshrc.backup ~/.zshrc"  # Restore backup
+
+# System configuration assessment:
+# Suggestion: Evaluate what ansible operations were performed
+# Reference: ansible/playbooks/cluster-health.yml for validation
+
+# Service configuration evaluation:
+# Context: Service changes may require systemctl operations
+# Constraint: Service impact varies by specific configuration
 ```
 
-## 📊 Quick Report Format
+### **Emergency Access Context**
+```yaml
+SSH Access Preservation:
+  - User-level changes preserve SSH connectivity
+  - Multiple access paths: direct SSH, web terminal, physical console
+  - Gateway routing through cooperator for external access
 
-```
-HYBRID DEPLOYMENT REPORT
-========================
-Timestamp: $(date)
-Agent: AI Agent from snitcher
-Approach: Hybrid (Minimal Ansible + Pure Chezmoi)
+Service Access:
+  - Web interfaces: https://mng.ism.la (Cockpit), https://cfg.ism.la (Semaphore)
+  - Alternative access methods documented in infrastructure/ssh/
 
-Connectivity: [3/3] nodes accessible
-System Setup: [COMPLETE/PARTIAL/FAILED]  
-User Configs: [COMPLETE/PARTIAL/FAILED]
-Validation: [ALL PASS/SOME ISSUES/FAILED]
-
-RECOMMENDATION: [SUCCESS/INVESTIGATE/ROLLBACK]
-NEXT ACTION: [Monitor/Fix Issues/Rollback]
-
-Deployment Method: Modern hybrid approach
-- System-level: Minimal preparation only
-- User-level: Pure chezmoi configuration
-- Risk Level: LOW (user-level changes only)
+Physical Access:
+  - Console access available on cooperator (Pi5)
+  - Network recovery possible via gateway node
 ```
 
-## 🔧 Troubleshooting Quick Fixes
+## 📊 Assessment Documentation
 
-**Chezmoi Issues:**
-```bash
-# Reinstall chezmoi
-ssh $node "curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"
+**Context**: Agents may document findings for collaboration with other agents
 
-# Reset chezmoi state
-ssh $node "rm -rf ~/.local/share/chezmoi && ~/.local/bin/chezmoi init --source /cluster-nas/configs/colab-omni-config"
+### **Suggested Reporting Structure**
+```yaml
+Cluster Assessment:
+  Connectivity: [Node accessibility status]
+  Configuration: [Current config method and status]
+  Infrastructure: [Service and infrastructure availability]
+  
+Implementation Decisions:
+  Approach: [Chosen strategy with reasoning]
+  Scope: [Which configuration domains addressed]
+  Risk Level: [Assessment based on change type]
+  
+Outcomes:
+  Changes Applied: [Specific modifications made]
+  Validation Results: [Functionality testing outcomes]  
+  Follow-up Needed: [Additional considerations for future agents]
 ```
 
-**Configuration Issues:**
-```bash
-# Test configuration loading
-ssh $node "timeout 5 zsh -c 'source ~/.zshrc && echo SUCCESS'"
+## 🔗 Reference Documentation
 
-# Check chezmoi status
-ssh $node "~/.local/bin/chezmoi status"
-```
+**Architecture**: See `documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md` for complete hybrid strategy details, technical requirements, and implementation phases.
 
----
+**Omni-Config**: See `omni-config/documentation/architecture/DESIGN_PRINCIPLES.md` for user configuration design philosophy and tool integration strategy.
 
-**Deployment Time: ~20 minutes total**  
-**Risk Level: LOW** (user-level changes only)  
-**Rollback Time: ~5 minutes**
-
-**For detailed procedures, see**: `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`
+**Repository Context**: Complete configuration domains span user environments, system infrastructure, service management, and utility automation across all cluster nodes.
