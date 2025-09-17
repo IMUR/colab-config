@@ -61,28 +61,28 @@ colab-config/
 ### **Modern Hybrid Deployment**
 
 ```bash
-# 1. Clone repository (2 minutes)
-git clone https://github.com/IMUR/colab-config.git
-cd colab-config
-
-# 2. Install chezmoi on all nodes (5 minutes)
+# 1. Ensure chezmoi is installed on all nodes (5 minutes)
 for node in crtr prtr drtr; do
-    ssh "$node" "curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"
+    ssh "$node" "command -v chezmoi >/dev/null || curl -sfL https://get.chezmoi.io | sh -s -- -b ~/.local/bin"
 done
 
-# 3. Deploy user configurations via chezmoi (10 minutes)  
-scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
-
-for node in drtr prtr crtr; do
+# 2. Deploy user configurations via chezmoi from GitHub remote (10 minutes)
+for node in crtr prtr drtr; do
     echo "Deploying to $node..."
-    ssh "$node" "~/.local/bin/chezmoi init --apply --source /cluster-nas/configs/colab-omni-config"
+    ssh "$node" "chezmoi init --apply https://github.com/IMUR/colab-config.git"
     ssh "$node" 'source ~/.zshrc && echo "✅ '$node' ready"'
 done
 
-# 4. Validate deployment (3 minutes)
+# 3. Validate deployment and templating (3 minutes)
 echo "🎉 Deployment complete! Testing functionality..."
 for node in crtr prtr drtr; do
-    ssh "$node" "echo 'Node:' \$(hostname) && command -v eza >/dev/null && echo '✅ Modern tools ready'"
+    ssh "$node" "echo 'Node:' \$(hostname) && chezmoi data | grep node_role && command -v eza starship >/dev/null && echo '✅ Modern tools and templating ready'"
+done
+
+# 4. Test shell consistency across nodes
+for node in crtr prtr drtr; do
+    ssh "$node" "bash -c 'source ~/.bashrc && command -v nvm >/dev/null && echo \"$node: Bash+NVM working\"'"
+    ssh "$node" "zsh -c 'source ~/.zshrc && command -v nvm >/dev/null && echo \"$node: ZSH+NVM working\"'"
 done
 ```
 
@@ -104,11 +104,12 @@ ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
 - Minimal, focused, low-risk operations
 
 **User-Level (Pure Chezmoi)**:
-- Rich shell environments (.zshrc, .profile, .bashrc)
+- Rich shell environments (.zshrc.tmpl, .bashrc.tmpl, .profile)
 - Modern CLI tools (eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch)
-- Development configurations (git, tmux, cargo, npm)
+- Development configurations (git, tmux, cargo, npm, NVM unified loading)
 - Universal user environment (PATH, aliases, functions)
-- Cross-node consistency with templating
+- Cross-node consistency with GitHub remote deployment
+- **Template System**: .tmpl files with shared includes (.chezmoitemplate files)
 - **Reference Implementation**: Platonic-node (`/cluster-nas/configs/platonic-node/`) shows theoretical ideal
 
 ### **Universal User Experience**
@@ -168,12 +169,20 @@ done
 ### **Configuration Updates**
 ```bash
 # Update user configurations (primary method)
-git pull  # Get latest omni-config changes
-scp -r omni-config/ crtr:/cluster-nas/configs/colab-omni-config/
+# 1. Edit configs in /cluster-nas/colab/colab-config/omni-config/
+# 2. Commit and push changes to GitHub
+git add omni-config/
+git commit -m "Update configurations"
+git push origin main
 
-# Apply updates across cluster
+# 3. Apply updates across cluster via GitHub remote
 for node in crtr prtr drtr; do
     ssh "$node" "chezmoi update"
+done
+
+# 4. Validate template rendering and functionality
+for node in crtr prtr drtr; do
+    ssh "$node" "chezmoi data | grep node_role && source ~/.zshrc"
 done
 
 # System-level updates (minimal, as needed)

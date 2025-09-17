@@ -12,7 +12,10 @@ This directory contains detailed architectural documentation for the Co-lab clus
 - **Nodes**: cooperator (crtr), projector (prtr), director (drtr)
 - **Network**: 192.168.254.0/24 internal
 - **Configuration**: Hybrid (Minimal Ansible + Pure Chezmoi)
-- **Deployment Time**: ~20 minutes
+- **Deployment Method**: GitHub remote (`chezmoi init --apply https://github.com/IMUR/colab-config.git`)
+- **Template System**: .tmpl files with node-specific rendering (cooperator/projector/director)
+- **Shell Management**: Unified bash and zsh with shared NVM loading
+- **Deployment Time**: ~15 minutes
 - **Risk Level**: Low (user-level changes only)
 
 For implementation details, see the complete architecture document.

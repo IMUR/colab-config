@@ -10,8 +10,10 @@ This directory contains the **user environment foundation** for the co-lab clust
 
 ### **Core Shell Environment**
 - **`dot_profile`**: Universal profile with intelligent tool detection system
-- **`dot_zshrc`**: Modern ZSH configuration with performance optimization
+- **`dot_zshrc.tmpl`**: Modern ZSH configuration with performance optimization (template)
+- **`dot_bashrc.tmpl`**: Modern Bash configuration with unified tool integration (template)
 - **`dot_config/starship.toml`**: Professional shell prompt configuration
+- **`.chezmoitemplate.nvm-loader.sh`**: Shared NVM loading template for consistent Node.js environment
 
 ### **Tool Integration System**
 - **Smart Detection**: Handles cross-architecture differences (ARM64 vs x86_64)
@@ -23,19 +25,19 @@ This directory contains the **user environment foundation** for the co-lab clust
 
 ```
 omni-config/
-├── dot_profile              # Universal profile + HAS_* tool detection
-├── dot_zshrc               # Modern ZSH with tool integrations
-├── dot_config/             # Tool-specific configurations
-│   └── starship.toml       # Professional prompt setup
-├── tools/                  # Tool management
-│   └── modern-cli/         # Modern CLI tool configurations
-│       ├── starship.toml   # Alternative starship config
-│       └── tool-install.yml # Ansible tool installation
-├── documentation/          # Design documentation
+├── .chezmoi.toml.tmpl              # Node-specific template configuration
+├── dot_profile                     # Universal profile + HAS_* tool detection
+├── dot_zshrc.tmpl                  # Modern ZSH with tool integrations (template)
+├── dot_bashrc.tmpl                 # Modern Bash with tool integrations (template)
+├── .chezmoitemplate.nvm-loader.sh  # Shared NVM loading template
+├── dot_config/                     # Tool-specific configurations
+│   └── starship.toml              # Professional prompt setup
+├── tools/                          # Tool management (archived)
+├── documentation/                  # Design documentation
 │   └── architecture/
 │       └── DESIGN_PRINCIPLES.md
-├── INSTALL.md             # Deployment instructions
-└── README.md              # This file
+├── PLATONIC-NODE-GUIDE.md         # Reference implementation guide
+└── README.md                      # This file
 ```
 
 ## 🔧 Configuration Capabilities
@@ -77,13 +79,16 @@ export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
 
 ## 🎯 Chezmoi Integration Context
 
-**Current State**: Ready for chezmoi deployment with templating completion needed
+**Current State**: ✅ **Fully operational** with GitHub remote deployment and templating system
 
-**Missing for Full Functionality**:
-- `.chezmoi.toml.tmpl` - Node templating configuration
-- Template variables in configuration files for node-specific adaptation
+**Implemented Features**:
+- ✅ `.chezmoi.toml.tmpl` - Node templating configuration (cooperator/projector/director)
+- ✅ Template system - .tmpl files with shared includes for code reuse
+- ✅ GitHub remote deployment - No NFS dependency for chezmoi operations
+- ✅ Unified shell management - Both bash and zsh with consistent NVM loading
+- ✅ Node-specific customization - Templates render different configs per node role
 
-**Deployment Ready**: Core configurations work without templating, templating adds node-specific enhancements
+**Deployment Method**: `chezmoi init --apply https://github.com/IMUR/colab-config.git`
 
 ## 🧭 Agent Integration Notes
 

@@ -12,7 +12,10 @@ This directory contains operational procedures for the Co-lab cluster.
 ## Quick Reference
 
 - **Assessment Focus**: Complete colab-config repository scope
-- **Strategy**: Hybrid approach (minimal ansible + pure chezmoi)
+- **Strategy**: Hybrid approach (minimal ansible + pure chezmoi with GitHub remote)
+- **Deployment Method**: `chezmoi init --apply https://github.com/IMUR/colab-config.git`
+- **Template System**: Node-specific rendering via .tmpl files and shared includes
+- **Shell Management**: Unified bash and zsh environments with NVM integration
 - **Risk Management**: User-level changes preserve SSH access
 - **Recovery**: Multiple rollback options documented
 
