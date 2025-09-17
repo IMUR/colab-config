@@ -1,67 +1,14 @@
 # Chezmoi Configuration Template for Co-lab Cluster Nodes
-# Provides node-specific templating data for omni-config deployment
+# Simplified universal configuration without node-specific settings
 
 [data]
     # Node identification
     hostname = {{ .chezmoi.hostname | quote }}
     arch = {{ .chezmoi.arch | quote }}
-    
-    # Node role determination based on hostname
-    node_role = {{ if eq .chezmoi.hostname "cooperator" }}"gateway"{{ else if eq .chezmoi.hostname "projector" }}"compute"{{ else if eq .chezmoi.hostname "director" }}"ml"{{ else }}"unknown"{{ end }}
-    
+
     # Architecture-specific flags
     is_arm64 = {{ eq .chezmoi.arch "aarch64" }}
     is_x86_64 = {{ eq .chezmoi.arch "x86_64" }}
-    
-    # Node-specific capabilities
-    {{ if eq .chezmoi.hostname "cooperator" -}}
-    has_nfs_server = true
-    has_gateway_services = true
-    has_pi_hardware = true
-    {{- else -}}
-    has_nfs_server = false
-    has_gateway_services = false
-    has_pi_hardware = false
-    {{- end }}
-
-    {{ if eq .chezmoi.hostname "projector" -}}
-    has_multi_gpu = true
-    has_high_memory = true
-    {{- else -}}
-    has_multi_gpu = false
-    has_high_memory = false
-    {{- end }}
-
-    {{ if eq .chezmoi.hostname "director" -}}
-    has_ml_focus = true
-    has_single_gpu = true
-    {{- else -}}
-    has_ml_focus = false
-    has_single_gpu = false
-    {{- end }}
-
-    # GPU and CUDA capabilities
-    {{ if or (eq .chezmoi.hostname "projector") (eq .chezmoi.hostname "director") -}}
-    has_gpu = true
-    has_cuda = true
-    cuda_version = "12.4"
-    {{- else -}}
-    has_gpu = false
-    has_cuda = false
-    cuda_version = ""
-    {{- end }}
-
-    # Docker capabilities
-    {{ if or (eq .chezmoi.hostname "projector") (eq .chezmoi.hostname "director") -}}
-    has_docker = true
-    has_nvidia_container = true
-    {{- else if eq .chezmoi.hostname "cooperator" -}}
-    has_docker = true
-    has_nvidia_container = false
-    {{- else -}}
-    has_docker = false
-    has_nvidia_container = false
-    {{- end }}
 
 # Chezmoi behavior configuration
 [edit]

@@ -7,48 +7,10 @@
 # TEMPLATE-TIME ENVIRONMENT DETECTION
 # ====================================================================
 
-# Node identification (baked in at deployment time, not runtime)
-export NODE_ROLE="{{ .hostname }}"
-export NODE_TYPE="{{ .node_role }}"
-export ARCH="{{ .arch }}"
+# Node identification (runtime detection)
+export NODE_ROLE="$(hostname)"
+export ARCH="$(uname -m)"
 export OS=$(uname -s)
-
-# Template-time architecture flags
-{{- if eq .arch "aarch64" }}
-export IS_ARM64=1
-export IS_X86_64=0
-{{- else if eq .arch "arm64" }}
-export IS_ARM64=1
-export IS_X86_64=0
-{{- else }}
-export IS_ARM64=0
-export IS_X86_64=1
-{{- end }}
-
-# Template-time node capabilities
-{{- if .has_pi_hardware }}
-export HAS_PI_HARDWARE=1
-{{- else }}
-export HAS_PI_HARDWARE=0
-{{- end }}
-
-{{- if or .has_multi_gpu .has_single_gpu }}
-export HAS_GPU=1
-{{- else }}
-export HAS_GPU=0
-{{- end }}
-
-{{- if .has_nfs_server }}
-export HAS_NFS_SERVER=1
-{{- else }}
-export HAS_NFS_SERVER=0
-{{- end }}
-
-{{- if .has_gateway_services }}
-export HAS_GATEWAY_SERVICES=1
-{{- else }}
-export HAS_GATEWAY_SERVICES=0
-{{- end }}
 
 {{- if .has_high_memory }}
 export HAS_HIGH_MEMORY=1
@@ -96,9 +58,7 @@ if [ -d "$HOME/.nvm" ]; then
     # Do not manually add Node to PATH - let NVM functions handle this
 fi
 
-# GPU-specific paths and environment (template-time conditional)
-{{- if .has_gpu }}
-# CUDA toolkit for GPU-enabled nodes
+# GPU-specific paths and environment (runtime detection)
 if [ -d "/usr/local/cuda/bin" ]; then
     add_to_path "/usr/local/cuda/bin"
     export CUDA_HOME="/usr/local/cuda"
@@ -106,18 +66,12 @@ fi
 if [ -d "/usr/local/cuda/lib64" ]; then
     export LD_LIBRARY_PATH="/usr/local/cuda/lib64${LD_LIBRARY_PATH:+":$LD_LIBRARY_PATH"}"
 fi
-{{- if .has_nvidia_container }}
-# NVIDIA Container Runtime for Docker GPU support
-export NVIDIA_VISIBLE_DEVICES="${NVIDIA_VISIBLE_DEVICES:-all}"
-export NVIDIA_DRIVER_CAPABILITIES="${NVIDIA_DRIVER_CAPABILITIES:-compute,utility}"
-{{- end }}
-{{- end }}
 
-# Architecture-specific tool paths
-{{- if .is_arm64 }}
-# ARM64-specific paths
-[ -d "/opt/homebrew/bin" ] && add_to_path "/opt/homebrew/bin"
-{{- end }}
+# Architecture-specific tool paths (runtime detection)
+if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+    # ARM64-specific paths
+    [ -d "/opt/homebrew/bin" ] && add_to_path "/opt/homebrew/bin"
+fi
 
 # Snap packages
 [ -d "/snap/bin" ] && add_to_path "/snap/bin"
