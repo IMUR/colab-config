@@ -42,12 +42,21 @@ omni-config/
 
 ### **Tool Detection Engine** (dot_profile)
 ```bash
-# Intelligent cross-platform detection with fallbacks
+# Intelligent cross-platform detection with fallbacks for complete tool suite:
 export HAS_EZA=$(_has eza && echo 1 || echo 0)
 export HAS_BAT=$(_has bat || _has batcat && echo 1 || echo 0)  # Debian compatibility
 export HAS_FD=$(_has fd || _has fdfind && echo 1 || echo 0)   # Package name handling
+export HAS_RG=$(_has rg && echo 1 || echo 0)
+export HAS_FZF=$(_has fzf && echo 1 || echo 0)
+export HAS_ZOXIDE=$(_has zoxide && echo 1 || echo 0)
+export HAS_STARSHIP=$(_has starship && echo 1 || echo 0)
+export HAS_ATUIN=$(_has atuin && echo 1 || echo 0)
+export HAS_DUST=$(_has dust && echo 1 || echo 0)
+export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
 
-# Architecture awareness, development tools, performance optimization
+# Complete tool suite: eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch
+# Development tools: git, tmux, cargo, npm, python3, uv
+# System tools: curl, wget, vim, htop, tree, openssh-client, rsync
 ```
 
 ### **Modern Shell Features** (dot_zshrc)
@@ -95,6 +104,66 @@ export HAS_FD=$(_has fd || _has fdfind && echo 1 || echo 0)   # Package name han
 - Complements minimal ansible system preparation
 - Provides rich user experience layer
 - Supports node-specific customization via templating (when completed)
+
+## 🛠️ Official Omni-Config Tool Suite
+
+### **Modern CLI Tools (Core)**
+```
+eza           # Modern ls replacement with icons and git integration
+bat           # cat with syntax highlighting and paging
+fd-find       # Modern find replacement (fast and user-friendly)
+ripgrep       # Extremely fast text search
+fzf           # Fuzzy finder for everything
+nnn           # Powerful terminal file manager
+git-delta     # Beautiful git diffs with syntax highlighting
+zoxide        # Smart cd replacement with frecency
+dust          # Visual disk usage analyzer
+starship      # Cross-shell prompt with rich customization
+atuin         # Smart shell history with sync capabilities
+fastfetch     # System information display tool
+```
+
+### **Development Environment**
+```
+zsh           # Modern shell with advanced features
+tmux          # Terminal multiplexer for session management
+git           # Version control system
+ansible       # Configuration management and automation
+cargo         # Rust package manager and build tool
+npm           # Node.js package manager
+python3       # Python programming language
+uv            # Fast Python package installer and resolver
+```
+
+### **System Utilities**
+```
+curl          # Data transfer tool
+wget          # Web file downloader
+vim           # Text editor
+htop          # Interactive process viewer
+tree          # Directory structure display
+openssh-client # SSH client for remote access
+rsync         # File synchronization tool
+```
+
+### **AI/Development Tools**
+```
+claude-code   # Claude AI coding assistant CLI
+gemini-cli    # Gemini AI command-line interface
+```
+
+### **Tool Detection Variables**
+The omni-config uses intelligent detection for cross-platform compatibility:
+```bash
+HAS_EZA, HAS_BAT, HAS_FD, HAS_RG, HAS_FZF, HAS_NNN, HAS_DELTA,
+HAS_ZOXIDE, HAS_DUST, HAS_STARSHIP, HAS_ATUIN, HAS_FASTFETCH
+```
+
+### **Package Compatibility**
+Handles Debian/Ubuntu naming variations:
+- `bat` vs `batcat`
+- `fd` vs `fdfind`
+- Architecture-specific binaries for `dust`, `starship`
 
 ## 🔗 Related Documentation
 

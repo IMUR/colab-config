@@ -60,10 +60,14 @@ colab-config/
 - Focused, low-risk operations preserving system stability
 
 **User-Level (Pure Chezmoi)**:
-- Rich shell environments with modern tool integration
+- Rich shell environments (.profile, .zshrc, .bashrc, .tmux.conf, .gitconfig)
+- Complete modern CLI tool suite (eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch)
+- Development tools integration (git, tmux, cargo, npm, python3, uv)
+- System utilities (curl, wget, vim, htop, tree, openssh-client, rsync)
 - Cross-node consistency with intelligent tool detection
 - Node-specific customization through templating (when implemented)
 - User configuration domain with safe rollback capabilities
+- **Reference Implementation**: Platonic-node (`/cluster-nas/configs/platonic-node/`) represents theoretical ideal for omni-config domain
 
 **Service & Infrastructure Management**:
 - Service-specific configurations in services/ directory
@@ -193,7 +197,11 @@ File Permissions (NFS Compatibility):
 User Environments:
   - Managed through omni-config/ and chezmoi deployment
   - Cross-node consistency with node-specific adaptation
-  - Modern shell experience with tool detection and fallbacks
+  - Modern shell experience with complete tool suite integration
+  - Tool detection system for: eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch
+  - Development environment: git, tmux, cargo, npm, python3, uv
+  - System utilities: curl, wget, vim, htop, tree, openssh-client, rsync
+  - **Theoretical Reference**: Platonic-node at `/cluster-nas/configs/platonic-node/` shows ideal omni-config state
 
 System Infrastructure:
   - Minimal ansible for essential system operations
@@ -240,5 +248,24 @@ Service Management:
 - **User Deployment**: omni-config/ via chezmoi to user environments
 - **System Operations**: Minimal ansible for essential infrastructure
 - **Service Management**: Domain-specific configurations as needed
+- **Reference Standard**: Platonic-node (`/cluster-nas/configs/platonic-node/`) shows theoretical ideal for omni-config domain only
+
+### **Platonic-Node Reference**
+The platonic-node serves as the **authoritative reference** for what a cluster node's user environment should look like after successful omni-config deployment:
+
+**Purpose**:
+- Theoretical ideal state for omni-config domain only
+- Testing sandbox for configuration changes before deployment
+- Validation target for deployment completeness
+- Documentation of complete user environment specification
+
+**Scope**: Exclusively omni-config purview - user-level configurations only
+- ✅ Shell dotfiles and tool configurations
+- ✅ Modern CLI tool integration and aliases
+- ✅ Universal development environment settings
+- ❌ NOT system configs, services, or node-specific infrastructure
+
+**Location**: `/cluster-nas/configs/platonic-node/`
+**Documentation**: `omni-config/PLATONIC-NODE-GUIDE.md`
 
 This repository supports comprehensive cluster infrastructure management through strategic tool selection and clear separation of concerns, enabling safe and efficient operations across all configuration domains.

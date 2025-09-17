@@ -24,7 +24,8 @@ colab-config/
 │   ├── dot_zshrc         # Modern shell configuration
 │   ├── dot_profile       # Universal profile + tool detection
 │   ├── dot_config/       # Tool configurations (starship, etc.)
-│   └── tools/            # Tool-specific settings
+│   ├── tools/            # Tool-specific settings
+│   └── PLATONIC-NODE-GUIDE.md # Reference for theoretical ideal state
 ├── 🔧 ansible/            # MINIMAL: System-level only
 │   ├── playbooks/        # Health checks, basic system setup
 │   ├── inventory/        # Node definitions
@@ -103,10 +104,12 @@ ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
 - Minimal, focused, low-risk operations
 
 **User-Level (Pure Chezmoi)**:
-- Rich shell environments (.zshrc, .profile) 
-- Modern CLI tools (eza, bat, fd, rg, fzf, starship)
-- Development configurations (git, tmux)
+- Rich shell environments (.zshrc, .profile, .bashrc)
+- Modern CLI tools (eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch)
+- Development configurations (git, tmux, cargo, npm)
+- Universal user environment (PATH, aliases, functions)
 - Cross-node consistency with templating
+- **Reference Implementation**: Platonic-node (`/cluster-nas/configs/platonic-node/`) shows theoretical ideal
 
 ### **Universal User Experience**
 Deployed identically across all 3 cluster nodes:
