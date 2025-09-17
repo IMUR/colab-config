@@ -242,7 +242,7 @@ fi
 
 # Docker aliases (only work if docker is installed)
 if command -v docker >/dev/null 2>&1; then
-    alias dps='docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"'
+    alias dps='docker ps -a --format "table {{`{{.ID}}`}}\t{{`{{.Image}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"'
     alias dimg='docker images'
     alias dlog='docker logs -f'
     alias dexec='docker exec -it'
