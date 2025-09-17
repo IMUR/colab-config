@@ -253,52 +253,32 @@ fi
 # NODE-SPECIFIC CUSTOMIZATIONS
 # ====================================================================
 
-# Role-based configurations using template variables
-{{- if eq .node_role "gateway" }}
-# Gateway node (cooperator) specific aliases
+# Universal service management aliases
 alias services='systemctl list-units --type=service --state=active'
-alias nfs-status='systemctl status nfs-kernel-server'
-alias dns-status='systemctl status pi-hole'
-alias proxy-status='systemctl status caddy'
-alias restart-dns='sudo systemctl restart pi-hole'
-alias restart-proxy='sudo systemctl restart caddy'
-{{- end }}
 
-{{- if .has_gpu }}
-# GPU-enabled node aliases
-alias gpus='nvidia-smi'
-alias gpu-watch='watch -n 1 nvidia-smi'
-alias gpu-mem='nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader'
-alias gpu-util='nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader'
-{{- end }}
+# GPU aliases (only work if nvidia-smi is installed)
+if command -v nvidia-smi >/dev/null 2>&1; then
+    alias gpus='nvidia-smi'
+    alias gpu-watch='watch -n 1 nvidia-smi'
+    alias gpu-mem='nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader'
+    alias gpu-util='nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader'
+fi
 
-{{- if .has_docker }}
-# Docker aliases
-alias dps='docker ps -a --format "table {{`{{.ID}}`}}\t{{`{{.Image}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"'
-alias dimg='docker images'
-alias dlog='docker logs -f'
-alias dexec='docker exec -it'
-alias dstop='docker stop'
-alias dstart='docker start'
-alias drm='docker rm'
-alias dprune='docker system prune -af'
-{{- if .has_nvidia_container }}
-# Docker with GPU support
-alias drun-gpu='docker run -it --rm --gpus all'
-{{- end }}
-{{- end }}
-
-{{- if eq .node_role "compute" }}
-# Compute node (projector) specific aliases
-alias archon-status='docker ps | grep -i archon'
-alias cuda-version='nvcc --version'
-{{- end }}
-
-{{- if eq .node_role "ml" }}
-# ML platform (director) specific aliases
-alias ml-env='cd /cluster-nas/ml-workspace'
-alias models='cd /opt/ml/models'
-{{- end }}
+# Docker aliases (only work if docker is installed)
+if command -v docker >/dev/null 2>&1; then
+    alias dps='docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"'
+    alias dimg='docker images'
+    alias dlog='docker logs -f'
+    alias dexec='docker exec -it'
+    alias dstop='docker stop'
+    alias dstart='docker start'
+    alias drm='docker rm'
+    alias dprune='docker system prune -af'
+    # GPU support if available
+    if [ -f /usr/bin/nvidia-container-runtime ]; then
+        alias drun-gpu='docker run -it --rm --gpus all'
+    fi
+fi
 
 # Load additional local configurations if they exist
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
