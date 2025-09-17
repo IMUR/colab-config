@@ -24,6 +24,7 @@ This repository manages all co-lab cluster configurations using a **strategic hy
 
 ```
 colab-config/
+├── 📍 START-HERE.md            # 🚀 NAVIGATION GUIDE for infrastructure optimization
 ├── 🎯 omni-config/        # PRIMARY: User configurations (chezmoi)
 │   ├── dot_zshrc         # Modern shell configuration
 │   ├── dot_profile       # Universal profile + tool detection
@@ -64,6 +65,15 @@ colab-config/
 - **Internal Network**: 192.168.254.0/24
 - **DNS**: .ism.la domain via Pi-hole on cooperator
 - **Public Access**: Port forwarding through cooperator (22, 80, 443)
+
+## 🎯 Getting Started
+
+### **📍 START HERE for Infrastructure Optimization**
+**🚀 New to the project?** **Looking to optimize your cluster?** **Need infrastructure reset?**
+
+**👉 [START-HERE.md](START-HERE.md)** - Your complete navigation guide for the three-stage infrastructure optimization process.
+
+---
 
 ## 🚀 Quick Start (20 minutes)
 
