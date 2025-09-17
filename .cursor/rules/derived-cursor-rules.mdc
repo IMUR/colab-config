@@ -96,6 +96,7 @@ Chezmoi templates adapt automatically:
 10. Only changes to the current branch (backup) of the colab-config repo are permitted until further notice.
 11. Acquire objective knowledge when assumptions could cause issues.
 12. Don't loose sight of big-picture goals when approaching tasks or sub-tasks.
+13. All dangerous Ansible playbooks (e.g., `uid-standardization.yml`, `tool-standardization.yml`, `system-update.yml`) must be deleted immediately.
 
 ## CODING STANDARDS
 
