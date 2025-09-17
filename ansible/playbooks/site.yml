@@ -1,6 +1,0 @@
----
-# Main site playbook - runs all health checks
-- import_playbook: cluster-health.yml
-- import_playbook: service-status.yml  
-- import_playbook: disk-space-alert.yml
-- import_playbook: backup-verify.yml
