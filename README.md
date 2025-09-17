@@ -35,7 +35,9 @@ colab-config/
 │   ├── inventory/        # Node definitions
 │   └── group_vars/       # Basic node grouping
 ├── 📚 documentation/      # Comprehensive guides
-│   ├── architecture/     # System design
+│   ├── architecture/     # System design & implementation strategies
+│   │   ├── COLAB-CLUSTER-ARCHITECTURE.md  # Cluster architecture overview
+│   │   └── NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md  # GPU/CUDA deployment strategy
 │   ├── procedures/       # Deployment guides
 │   └── AI-AGENT-*.md     # Agent-focused procedures
 ├── 🛠️ services/          # Optional service configs
@@ -52,8 +54,8 @@ colab-config/
 
 **Core Cluster Nodes:**
 - **cooperator (crtr)** - Gateway, NFS server, DNS (Pi5, 16GB RAM)
-- **projector (prtr)** - Compute power, multi-GPU (x86, 128GB RAM)
-- **director (drtr)** - ML platform, dedicated GPU (x86, 64GB RAM)
+- **projector (prtr)** - Compute power, multi-GPU (x86, 128GB RAM, 4x GPU)
+- **director (drtr)** - ML platform, dedicated GPU (x86, 64GB RAM, 1x GPU)
 
 **Network Configuration:**
 - **Internal Network**: 192.168.254.0/24
@@ -96,6 +98,13 @@ done
 ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
 # Additional minimal ansible as needed
 ```
+
+### **GPU Node Setup (Projector & Director)**
+For GPU-enabled inference workloads, see the comprehensive implementation strategy:
+- **📖 Guide**: [NVIDIA/CUDA Implementation Strategy](documentation/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md)
+- **Scope**: Complete NVIDIA driver + CUDA toolkit installation
+- **Integration**: Chezmoi templates for node-specific GPU configurations
+- **Workloads**: Optimized for Ollama, vLLM, llama.cpp, PyTorch inference
 
 ## 🔧 Modern Configuration Management
 
