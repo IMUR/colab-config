@@ -20,10 +20,10 @@
     has_pi_hardware = true
     {{- else -}}
     has_nfs_server = false
-    has_gateway_services = false 
+    has_gateway_services = false
     has_pi_hardware = false
     {{- end }}
-    
+
     {{ if eq .chezmoi.hostname "projector" -}}
     has_multi_gpu = true
     has_high_memory = true
@@ -31,13 +31,36 @@
     has_multi_gpu = false
     has_high_memory = false
     {{- end }}
-    
+
     {{ if eq .chezmoi.hostname "director" -}}
     has_ml_focus = true
     has_single_gpu = true
     {{- else -}}
     has_ml_focus = false
     has_single_gpu = false
+    {{- end }}
+
+    # GPU and CUDA capabilities
+    {{ if or (eq .chezmoi.hostname "projector") (eq .chezmoi.hostname "director") -}}
+    has_gpu = true
+    has_cuda = true
+    cuda_version = "12.4"
+    {{- else -}}
+    has_gpu = false
+    has_cuda = false
+    cuda_version = ""
+    {{- end }}
+
+    # Docker capabilities
+    {{ if or (eq .chezmoi.hostname "projector") (eq .chezmoi.hostname "director") -}}
+    has_docker = true
+    has_nvidia_container = true
+    {{- else if eq .chezmoi.hostname "cooperator" -}}
+    has_docker = true
+    has_nvidia_container = false
+    {{- else -}}
+    has_docker = false
+    has_nvidia_container = false
     {{- end }}
 
 # Chezmoi behavior configuration

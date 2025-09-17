@@ -1,3 +1,7 @@
+**📍 File Location**: `documentation/architecture/README.md`
+
+---
+
 # Architecture Documentation
 
 This directory contains detailed architectural documentation for the Co-lab cluster.

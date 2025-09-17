@@ -253,9 +253,55 @@ fi
 # NODE-SPECIFIC CUSTOMIZATIONS
 # ====================================================================
 
-# Load node-specific configurations if they exist
+# Role-based configurations using template variables
+{{- if eq .node_role "gateway" }}
+# Gateway node (cooperator) specific aliases
+alias services='systemctl list-units --type=service --state=active'
+alias nfs-status='systemctl status nfs-kernel-server'
+alias dns-status='systemctl status pi-hole'
+alias proxy-status='systemctl status caddy'
+alias restart-dns='sudo systemctl restart pi-hole'
+alias restart-proxy='sudo systemctl restart caddy'
+{{- end }}
+
+{{- if .has_gpu }}
+# GPU-enabled node aliases
+alias gpus='nvidia-smi'
+alias gpu-watch='watch -n 1 nvidia-smi'
+alias gpu-mem='nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader'
+alias gpu-util='nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader'
+{{- end }}
+
+{{- if .has_docker }}
+# Docker aliases
+alias dps='docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"'
+alias dimg='docker images'
+alias dlog='docker logs -f'
+alias dexec='docker exec -it'
+alias dstop='docker stop'
+alias dstart='docker start'
+alias drm='docker rm'
+alias dprune='docker system prune -af'
+{{- if .has_nvidia_container }}
+# Docker with GPU support
+alias drun-gpu='docker run -it --rm --gpus all'
+{{- end }}
+{{- end }}
+
+{{- if eq .node_role "compute" }}
+# Compute node (projector) specific aliases
+alias archon-status='docker ps | grep -i archon'
+alias cuda-version='nvcc --version'
+{{- end }}
+
+{{- if eq .node_role "ml" }}
+# ML platform (director) specific aliases
+alias ml-env='cd /cluster-nas/ml-workspace'
+alias models='cd /opt/ml/models'
+{{- end }}
+
+# Load additional local configurations if they exist
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
-[[ -f ~/.zshrc.$NODE_ROLE ]] && source ~/.zshrc.$NODE_ROLE
 
 # Clean up
 unset _shell_start_time _shell_end_time _startup_time

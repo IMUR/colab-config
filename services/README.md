@@ -1,3 +1,7 @@
+**📍 File Location**: `services/README.md`
+
+---
+
 # Service Configurations
 
 **Context**: Independent service configuration management separate from user environments

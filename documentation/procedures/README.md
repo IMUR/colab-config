@@ -1,3 +1,7 @@
+**📍 File Location**: `documentation/procedures/README.md`
+
+---
+
 # Deployment Procedures
 
 This directory contains operational procedures for the Co-lab cluster.
