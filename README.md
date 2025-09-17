@@ -1,3 +1,7 @@
+**📍 File Location**: `README.md` (Project Root)
+
+---
+
 # Co-lab Cluster Configuration
 
 Comprehensive infrastructure configuration for the 3-node co-lab cluster (cooperator, projector, director).
@@ -104,27 +108,12 @@ ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
 - Minimal, focused, low-risk operations
 
 **User-Level (Pure Chezmoi)**:
-- Rich shell environments (.zshrc.tmpl, .bashrc.tmpl, .profile)
-- Modern CLI tools (eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch)
-- Development configurations (git, tmux, cargo, npm, NVM unified loading)
-- Universal user environment (PATH, aliases, functions)
-- Cross-node consistency with GitHub remote deployment
-- **Template System**: .tmpl files with shared includes (.chezmoitemplate files)
-- **Reference Implementation**: Platonic-node (`/cluster-nas/configs/platonic-node/`) shows theoretical ideal
-
-### **Universal User Experience**
-Deployed identically across all 3 cluster nodes:
-- ✅ **Modern Shell**: ZSH with advanced features
-- ✅ **Tool Detection**: Smart fallbacks for missing tools
-- ✅ **Performance**: Optimized startup times
-- ✅ **Consistency**: Same experience on every node
-
-### **Node-Specific Templating**
-Chezmoi templates adapt automatically:
-- **cooperator**: Gateway-specific aliases and paths
-- **projector**: Multi-GPU development shortcuts  
-- **director**: ML workflow optimizations
-- **Architecture-aware**: ARM64 vs x86_64 tool handling
+- Rich shell environments managed via chezmoi templates
+- Modern CLI tool suite with intelligent detection and fallbacks
+- Development environment configurations with cross-node consistency
+- **Template System**: Node-specific customization via .tmpl files
+- **Deployment**: GitHub remote with local working directory
+- **Details**: See [omni-config/README.md](omni-config/README.md) for comprehensive configuration details
 
 ## 📚 Key Services
 

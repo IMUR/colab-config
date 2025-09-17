@@ -1,3 +1,7 @@
+**📍 File Location**: `omni-config/README.md`
+
+---
+
 # Omni-Config: Universal User Environment
 
 **Purpose**: User-level configurations deployed identically across all cluster nodes (crtr, prtr, drtr)
@@ -77,18 +81,46 @@ export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
 # Performance-focused configuration
 ```
 
-## 🎯 Chezmoi Integration Context
+## 🎯 Chezmoi Deployment Architecture
 
-**Current State**: ✅ **Fully operational** with GitHub remote deployment and templating system
+**Current State**: ✅ **Fully operational** with dual-source architecture
+
+### **Deployment Method**: Hybrid Local Working + GitHub Remote
+```bash
+# Working Directory (Edit Here):
+/cluster-nas/colab/colab-config/omni-config/  # Local NFS working directory
+
+# Source of Truth (Deploy From):
+https://github.com/IMUR/colab-config.git      # GitHub remote repository
+
+# Node Deployment:
+chezmoi init --apply https://github.com/IMUR/colab-config.git
+```
+
+### **Change Workflow**:
+```bash
+# 1. Edit configurations in local working directory
+cd /cluster-nas/colab/colab-config/omni-config/
+# (edit dot_profile, dot_zshrc.tmpl, etc.)
+
+# 2. Commit and push to GitHub remote
+git add omni-config/
+git commit -m "Update configurations"
+git push origin main
+
+# 3. Update all nodes from GitHub remote
+for node in crtr prtr drtr; do
+    ssh "$node" "chezmoi update"  # Pull from GitHub, render templates, apply
+done
+```
 
 **Implemented Features**:
-- ✅ `.chezmoi.toml.tmpl` - Node templating configuration (cooperator/projector/director)
-- ✅ Template system - .tmpl files with shared includes for code reuse
-- ✅ GitHub remote deployment - No NFS dependency for chezmoi operations
+- ✅ `.chezmoi.toml.tmpl` - Node templating data (cooperator/projector/director)
+- ✅ Template system - .tmpl files with shared includes (.chezmoitemplate files)
+- ✅ GitHub remote deployment - Decoupled from local NFS for operations
 - ✅ Unified shell management - Both bash and zsh with consistent NVM loading
 - ✅ Node-specific customization - Templates render different configs per node role
-
-**Deployment Method**: `chezmoi init --apply https://github.com/IMUR/colab-config.git`
+- ⚠️ **Template consistency needed** - dot_profile should be dot_profile.tmpl for node-specific elements
 
 ## 🧭 Agent Integration Notes
 
@@ -100,15 +132,21 @@ export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
 - **Professional development environment** with modern tool integrations
 - **Cluster-specific enhancements** (aliases, paths, shortcuts)
 
-**Constraints for Agent Consideration**:
-- Requires chezmoi for deployment (agents may need to install/configure)
-- Designed for cluster nodes only (excludes snitcher mobile access)
-- Depends on shared storage for template source distribution
+**Deployment Architecture Clarification**:
+- **Working Directory**: `/cluster-nas/colab/colab-config/omni-config/` (edit configurations here)
+- **Source of Truth**: GitHub remote `https://github.com/IMUR/colab-config.git` (nodes deploy from here)
+- **Template Processing**: Chezmoi renders .tmpl files with node-specific data during deployment
+- **No NFS Dependency**: After initialization, nodes operate independently
+
+**Current Template Inconsistency**:
+- ⚠️ **dot_profile** should be **dot_profile.tmpl** for node-specific templating
+- ⚠️ **Node-specific case statements** in profile would be cleaner as template conditionals
+- ⚠️ **Template consistency** needed across all shell configuration files
 
 **Integration with Cluster Strategy**:
 - Complements minimal ansible system preparation
 - Provides rich user experience layer
-- Supports node-specific customization via templating (when completed)
+- ✅ **Node-specific customization fully implemented** via templating system
 
 ## 🛠️ Official Omni-Config Tool Suite
 
