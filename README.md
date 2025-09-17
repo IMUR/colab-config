@@ -37,8 +37,10 @@ colab-config/
 ├── 📚 documentation/      # Comprehensive guides
 │   ├── architecture/     # System design & implementation strategies
 │   │   ├── COLAB-CLUSTER-ARCHITECTURE.md  # Cluster architecture overview
-│   │   └── NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md  # GPU/CUDA deployment strategy
-│   ├── procedures/       # Deployment guides
+│   │   ├── NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md  # GPU/CUDA deployment strategy
+│   │   └── DOCKER-CLEAN-REINSTALL-STRATEGY.md  # Docker optimization with Archon preservation
+│   ├── procedures/       # Deployment and operational guides
+│   │   └── COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md  # End-to-end reset procedure
 │   └── AI-AGENT-*.md     # Agent-focused procedures
 ├── 🛠️ services/          # Optional service configs
 ├── 🏗️ infrastructure/    # Supporting configurations
@@ -99,12 +101,26 @@ ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
 # Additional minimal ansible as needed
 ```
 
-### **GPU Node Setup (Projector & Director)**
-For GPU-enabled inference workloads, see the comprehensive implementation strategy:
+### **Infrastructure Reset and Optimization**
+For complete cluster infrastructure optimization with application preservation:
+
+**🎯 Complete Infrastructure Reset:**
+- **📖 Guide**: [Complete Infrastructure Reset Sequence](documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md)
+- **Strategy**: Clean slate → omni-config deployment → optimal reinstallation
+- **Timeline**: ~3 hours total, ~2 hours downtime
+- **Applications**: 100% Archon preservation throughout process
+
+**🖥️ GPU Node Setup (Projector & Director):**
 - **📖 Guide**: [NVIDIA/CUDA Implementation Strategy](documentation/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md)
 - **Scope**: Complete NVIDIA driver + CUDA toolkit installation
 - **Integration**: Chezmoi templates for node-specific GPU configurations
 - **Workloads**: Optimized for Ollama, vLLM, llama.cpp, PyTorch inference
+
+**🐳 Docker Infrastructure:**
+- **📖 Guide**: [Docker Clean Reinstall Strategy](documentation/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md)
+- **Approach**: Complete removal with 100% Archon container preservation
+- **Benefits**: Eliminates fragmentation, enables optimal GPU integration
+- **Integration**: Template-driven configuration management
 
 ## 🔧 Modern Configuration Management
 
