@@ -1,7 +1,3 @@
----
-description: AI rules derived by SpecStory from the project AI interaction history
-globs: *
----
 
 ## HEADERS
 
@@ -17,7 +13,6 @@ The "colab-config" project aims to provide a comprehensive infrastructure config
 - Chezmoi: For user-level dotfile management and configuration.
 - Zsh: As the preferred shell environment.
 - Git: For version control and collaboration.
-- VSCode Extension 'alefragnani.project-manager': Helps manage project-related tasks within VSCode. This extension helps manage project-related tasks within VSCode.
 
 ## PROJECT STRUCTURE
 
@@ -34,7 +29,7 @@ colab-config/
 │   └── group_vars/       # Basic node grouping
 ├── 📚 documentation/      # Comprehensive guides
 │   ├── architecture/     # System design
-│   ├── procedures/     # Deployment guides
+│   ├── procedures/       # Deployment guides
 │   └── AI-AGENT-*.md     # Agent-focused procedures
 ├── 🛠️ services/          # Optional service configs
 ├── 🏗️ infrastructure/    # Supporting configurations
@@ -91,15 +86,6 @@ Chezmoi templates adapt automatically:
 4.  Use pull requests for code review.
 5.  All dangerous Ansible playbooks (e.g., `uid-standardization.yml`, `tool-standardization.yml`, `system-update.yml`) must be deleted immediately.
 6. The project is currently operating in the 'backup' branch until key issues are resolved.
-7.  `@AI-AGENT-DEPLOYMENT-GUIDE.md` should be deleted immediately.
-8.  `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be renamed to `COLAB-CLUSTER-ARCHITECTURE.md`.
-9. A new `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be created that contains a simple index.
-10. Only changes to the current branch (backup) of the colab-config repo are permitted until further notice.
-11. Acquire objective knowledge when assumptions could cause issues.
-12. Don't loose sight of big-picture goals when approaching tasks or sub-tasks.
-13. The `omni-config/INSTALL.md` file must be deleted.
-14. The  `archive` directory should be renamed to `.archive` and added to the `.gitignore`.
-15. The `.cursor/` and `.specstory/` directories must be added to the `.gitignore` file.
 
 ## CODING STANDARDS
 
@@ -120,23 +106,24 @@ Chezmoi templates adapt automatically:
 ### Key Documents:
 
 -   `README.md`: Project overview and quick start guide.
--   `documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md`: System architecture and design decisions.
+-   `documentation/architecture/README.md`: System architecture and design decisions.
+-   `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`: Step-by-step deployment guide for AI agents.
 -   `AI-AGENT-QUICKSTART.md`: Quick start guide for AI agents on snitcher.
 -   `CLAUDE.md`: Repository guidelines for Claude.
 
 ### AI Agent Integration
 
--   **20-minute Assessment**: Use updated `AI-AGENT-QUICKSTART.md` for hybrid deployment
--   Comprehensive Guide**: Follow `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md` (REMOVED: Replaced by enhanced Quickstart guide)
--   Modern Approach**: Hybrid strategy - minimal ansible + pure chezmoi
--   Low Risk**: User-level changes only, SSH access preserved
+- 20-minute Assessment**: Use updated `AI-AGENT-QUICKSTART.md` for hybrid deployment
+- Comprehensive Guide**: Follow `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md`
+- Modern Approach**: Hybrid strategy - minimal ansible + pure chezmoi
+- Low Risk**: User-level changes only, SSH access preserved
 
 ### Deployment Confidence
 
--   ✅ **Low Risk**: User-level configurations only
--   ✅ **Fast Recovery**: Simple chezmoi rollback vs complex system restore
--   ✅ **Proven Approach**: Following established best practices
--   ✅ **Minimal Dependencies**: No complex ansible orchestration required
+- ✅ **Low Risk**: User-level configurations only
+- ✅ **Fast Recovery**: Simple chezmoi rollback vs complex system restore
+- ✅ **Proven Approach**: Following established best practices
+- ✅ **Minimal Dependencies**: No complex ansible orchestration required
 
 ### Documentation Philosophy
 
@@ -145,10 +132,7 @@ Chezmoi templates adapt automatically:
 -   Document the reasoning behind design decisions.
 
 ### Renaming and Repurposing
-The following actions must be taken:
-1.  `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md` should be deleted immediately.
-2.  `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be renamed to `COLAB-CLUSTER-ARCHITECTURE.md`.
-3.  A new `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be created that contains a simple index.
+Consider renaming and repurposing `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` due to duplication with the root `README.md`.
 
 ## SECURITY
 
