@@ -38,17 +38,11 @@ add_to_path() {
 # Development tools
 [ -d "$HOME/.cargo/bin" ] && add_to_path "$HOME/.cargo/bin"
 
-# Node.js via NVM (if available)
+# NVM (Node Version Manager) environment variable
+# Note: NVM shell functions are loaded in shell RC files, not here
 if [ -d "$HOME/.nvm" ]; then
     export NVM_DIR="$HOME/.nvm"
-    # Find the latest/default node version
-    if [ -d "$NVM_DIR/versions/node" ]; then
-        # Use the current/default version if available
-        NODE_VERSION=$(ls "$NVM_DIR/versions/node" | tail -n1)
-        if [ -n "$NODE_VERSION" ] && [ -d "$NVM_DIR/versions/node/$NODE_VERSION/bin" ]; then
-            add_to_path "$NVM_DIR/versions/node/$NODE_VERSION/bin"
-        fi
-    fi
+    # Do not manually add Node to PATH - let NVM functions handle this
 fi
 
 # CUDA (for GPU nodes)
