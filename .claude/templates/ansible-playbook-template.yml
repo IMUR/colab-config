@@ -1,0 +1,78 @@
+---
+# Ansible Playbook Template for Co-lab Cluster
+# Use this template when creating new playbooks
+
+- name: [Descriptive name of what this playbook does]
+  hosts: [cluster_nodes | all | specific_group]
+  become: [yes | no]  # Use sparingly, prefer user-level operations
+  gather_facts: [yes | no]
+  vars:
+    # Define any playbook-specific variables here
+    backup_timestamp: "{{ ansible_date_time.epoch }}"
+
+  pre_tasks:
+    # Safety checks before main tasks
+    - name: Verify cluster connectivity
+      ping:
+
+    - name: Check if NFS is mounted (if required)
+      stat:
+        path: /cluster-nas
+      register: cluster_nas_mount
+      when: requires_nfs | default(false)
+
+    - name: Fail if NFS required but not available
+      fail:
+        msg: "/cluster-nas not accessible but required for this operation"
+      when:
+        - requires_nfs | default(false)
+        - not cluster_nas_mount.stat.exists
+
+  tasks:
+    # Main playbook tasks here
+    - name: [First task description]
+      [module_name]:
+        # module parameters
+      register: task_result
+
+    - name: [Second task description]
+      [module_name]:
+        # module parameters
+      when: task_result is succeeded
+
+    # Always include validation
+    - name: Validate changes
+      [validation_module]:
+        # validation parameters
+      register: validation_result
+
+    - name: Report validation results
+      debug:
+        msg: "Validation {{ 'passed' if validation_result is succeeded else 'failed' }}"
+
+  post_tasks:
+    # Cleanup and reporting
+    - name: Update cluster health status
+      shell: systemctl status [relevant_service]
+      register: service_status
+      failed_when: false
+
+    - name: Create change log entry
+      lineinfile:
+        path: /cluster-nas/logs/ansible-changes.log
+        line: "{{ ansible_date_time.iso8601 }} - {{ inventory_hostname }} - {{ ansible_playbook }}"
+        create: yes
+      when: cluster_nas_mount.stat.exists | default(false)
+
+  handlers:
+    # Define handlers for service restarts, etc.
+    - name: restart [service_name]
+      systemd:
+        name: [service_name]
+        state: restarted
+      become: yes
+
+# Additional plays can be added here
+- name: [Second play if needed]
+  hosts: [different_hosts]
+  # ... additional play content
