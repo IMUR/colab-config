@@ -60,12 +60,14 @@ colab-config/
 - Focused, low-risk operations preserving system stability
 
 **User-Level (Pure Chezmoi)**:
-- Rich shell environments (.profile, .zshrc, .bashrc, .tmux.conf, .gitconfig)
+- Rich shell environments (.profile, .zshrc.tmpl, .bashrc.tmpl, .tmux.conf, .gitconfig)
 - Complete modern CLI tool suite (eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch)
 - Development tools integration (git, tmux, cargo, npm, python3, uv)
 - System utilities (curl, wget, vim, htop, tree, openssh-client, rsync)
 - Cross-node consistency with intelligent tool detection
-- Node-specific customization through templating (when implemented)
+- ✅ **Node-specific customization via templating** (.chezmoi.toml.tmpl with cooperator/projector/director roles)
+- ✅ **Unified NVM loading** (.chezmoitemplate.nvm-loader.sh shared across bash and zsh)
+- ✅ **GitHub remote deployment** (no NFS dependency for chezmoi operations)
 - User configuration domain with safe rollback capabilities
 - **Reference Implementation**: Platonic-node (`/cluster-nas/configs/platonic-node/`) represents theoretical ideal for omni-config domain
 
@@ -101,19 +103,26 @@ Operational Efficiency:
 #### **User Environment Management (Primary)**
 ```bash
 # Context: omni-config/ contains user shell and tool configurations
-# Approach: Pure chezmoi deployment for cross-node consistency
+# Approach: Pure chezmoi deployment via GitHub remote for cross-node consistency
 
-# Assessment suggestion:
-ssh drtr "chezmoi diff"  # Preview changes on least critical node
-
-# Deployment suggestion:  
+# Initial deployment (if needed):
 for node in crtr prtr drtr; do
-    ssh "$node" "chezmoi apply"  # Apply user configuration changes
+    ssh "$node" "chezmoi init --apply https://github.com/IMUR/colab-config.git"
+done
+
+# Configuration updates workflow:
+# 1. Edit configs in /cluster-nas/colab/colab-config/omni-config/
+# 2. Commit and push to GitHub remote
+git add omni-config/ && git commit -m "Update configurations" && git push origin main
+
+# 3. Apply updates across cluster
+for node in crtr prtr drtr; do
+    ssh "$node" "chezmoi update"  # Pull from GitHub and apply changes
 done
 
 # Validation approach:
 for node in crtr prtr drtr; do
-    ssh "$node" 'source ~/.zshrc && echo "$node: user environment ready"'
+    ssh "$node" 'chezmoi data | grep node_role && source ~/.zshrc && source ~/.bashrc && echo "$node: unified environment ready"'
 done
 ```
 
@@ -195,12 +204,15 @@ File Permissions (NFS Compatibility):
 ### **Configuration Domains**
 ```yaml
 User Environments:
-  - Managed through omni-config/ and chezmoi deployment
-  - Cross-node consistency with node-specific adaptation
+  - Managed through omni-config/ and chezmoi GitHub remote deployment
+  - Cross-node consistency with node-specific template adaptation
   - Modern shell experience with complete tool suite integration
   - Tool detection system for: eza, bat, fd-find, ripgrep, fzf, nnn, git-delta, zoxide, dust, starship, atuin, fastfetch
   - Development environment: git, tmux, cargo, npm, python3, uv
   - System utilities: curl, wget, vim, htop, tree, openssh-client, rsync
+  - Unified shell management: bash (.bashrc.tmpl) and zsh (.zshrc.tmpl) with shared NVM loading
+  - Template system: .tmpl files with .chezmoitemplate includes for code reuse
+  - Node-specific roles: cooperator (gateway), projector (compute), director (ml)
   - **Theoretical Reference**: Platonic-node at `/cluster-nas/configs/platonic-node/` shows ideal omni-config state
 
 System Infrastructure:
@@ -244,8 +256,11 @@ Service Management:
 - **Service Infrastructure**: Web interfaces, automation, monitoring
 
 ### **Configuration Flow**
-- **Source of Truth**: This repository for infrastructure configuration
-- **User Deployment**: omni-config/ via chezmoi to user environments
+- **Source of Truth**: This repository (GitHub remote) for infrastructure configuration
+- **User Deployment**: omni-config/ via chezmoi GitHub remote with template rendering
+- **Template Processing**: .tmpl files render node-specific configurations (cooperator/projector/director)
+- **Shell Unification**: Shared templates (.chezmoitemplate files) ensure consistent environments
+- **Update Workflow**: Git commit → push → chezmoi update on nodes
 - **System Operations**: Minimal ansible for essential infrastructure
 - **Service Management**: Domain-specific configurations as needed
 - **Reference Standard**: Platonic-node (`/cluster-nas/configs/platonic-node/`) shows theoretical ideal for omni-config domain only
