@@ -96,10 +96,17 @@ if [ -d "$HOME/.nvm" ]; then
     # Do not manually add Node to PATH - let NVM functions handle this
 fi
 
-# GPU-specific paths (template-time conditional)
+# GPU-specific paths (capability-based)
 {{- if or .has_multi_gpu .has_single_gpu }}
-# CUDA (for GPU nodes)
+# CUDA toolkit for GPU-enabled nodes
 [ -d "/usr/local/cuda/bin" ] && add_to_path "/usr/local/cuda/bin"
+[ -d "/usr/local/cuda/lib64" ] && export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"
+{{- end }}
+
+# Gateway-specific paths
+{{- if .has_gateway_services }}
+# Pi-hole and gateway service paths
+[ -d "/opt/pihole" ] && add_to_path "/opt/pihole"
 {{- end }}
 
 # Architecture-specific tool paths
@@ -188,22 +195,31 @@ fi
 # Co-lab cluster shared storage
 export CLUSTER_NAS="{{ .cluster.nas_path }}"
 
-# Template-time node-specific configurations
-{{- if eq .hostname "cooperator" }}
-# Cooperator (Gateway) specific
-export COOPERATOR_SERVICES_PATH="/opt/cooperator/services"
+# Template-time capability-based configurations
+{{- if .has_gateway_services }}
+# Gateway node specific
+export GATEWAY_SERVICES_PATH="/opt/gateway/services"
+export DNS_CONFIG_PATH="/etc/pihole"
 {{- end }}
 
-{{- if eq .hostname "projector" }}
-# Projector (Compute) specific
-export PROJECTOR_GPU_COUNT=4
-export PROJECTOR_MEMORY="128GB"
+{{- if .has_multi_gpu }}
+# Multi-GPU compute node specific
+export GPU_COUNT=4
+export GPU_MEMORY="32GB"
+export COMPUTE_OPTIMIZATIONS=1
 {{- end }}
 
-{{- if eq .hostname "director" }}
-# Director (ML) specific
-export DIRECTOR_ML_MODELS_PATH="/opt/ml/models"
-export DIRECTOR_GPU_COUNT=1
+{{- if .has_single_gpu }}
+# Single-GPU ML node specific  
+export ML_MODELS_PATH="/opt/ml/models"
+export GPU_COUNT=1
+export ML_OPTIMIZATIONS=1
+{{- end }}
+
+{{- if .has_high_memory }}
+# High-memory node specific
+export MEMORY_OPTIMIZATIONS=1
+export LARGE_DATASET_SUPPORT=1
 {{- end }}
 
 # ====================================================================
