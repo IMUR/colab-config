@@ -1,0 +1,21 @@
+---
+# Main site playbook - minimal ansible approach
+# Focuses on safe system operations and health monitoring
+
+- name: Cluster Health and System Validation
+  import_playbook: health/cluster-health.yml
+  tags: [health, monitoring]
+# Optional system environment setup (uncomment when needed)
+# - name: System Environment Setup
+#   import_playbook: deployment/system-environment.yml
+#   tags: [system, environment]
+
+# Optional chezmoi installation (uncomment when needed)
+# - name: Install Chezmoi
+#   import_playbook: deployment/chezmoi-install.yml
+#   tags: [chezmoi, user]
+
+# Optional tool installation (1st draft - use with caution)
+# - name: Install Modern CLI Tools
+#   import_playbook: tools/modern-cli-tools.yml
+#   tags: [tools, optional]

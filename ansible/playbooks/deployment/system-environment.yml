@@ -1,0 +1,51 @@
+---
+# Basic system-wide environment setup - minimal approach
+- name: System Environment Setup
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create cluster environment profile
+      copy:
+        content: |
+          # Co-lab Cluster System Environment
+          # Deployed via minimal ansible approach
+
+          # Basic PATH management for all users
+          export PATH="/usr/local/bin:$PATH:$HOME/.local/bin"
+
+          # Cluster identification
+          export CLUSTER_NODE="$(hostname)"
+          export CLUSTER_DOMAIN="ism.la"
+
+          # Tool availability for system users (including root)
+          if command -v eza >/dev/null 2>&1; then
+              alias ll='eza -l --group-directories-first'
+              alias la='eza -la --group-directories-first'
+          else
+              alias ll='ls -l --group-directories-first'
+              alias la='ls -la --group-directories-first'
+          fi
+
+          # Unified tool detection for system-wide use
+          command -v bat >/dev/null 2>&1 || command -v batcat >/dev/null 2>&1 && alias cat='bat --style=auto 2>/dev/null || batcat --style=auto 2>/dev/null || cat'
+          command -v fd >/dev/null 2>&1 || command -v fdfind >/dev/null 2>&1 && alias find='fd 2>/dev/null || fdfind 2>/dev/null || find'
+
+          # Basic cluster shortcuts for all users
+          alias cluster='cd /cluster-nas 2>/dev/null || echo "NFS not available"'
+          alias configs='cd /cluster-nas/configs 2>/dev/null || echo "NFS not available"'
+        dest: /etc/profile.d/cluster-environment.sh
+        mode: "0644"
+        backup: yes
+
+    - name: Ensure cluster group exists
+      group:
+        name: cluster
+        gid: 2000
+        state: present
+
+    - name: Add users to cluster group
+      user:
+        name: "{{ ansible_user }}"
+        groups: cluster
+        append: yes
