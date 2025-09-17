@@ -1,0 +1,264 @@
+# ~/.bashrc - Modern Bash Configuration for Co-lab Cluster
+# Managed by chezmoi for consistent interactive bash environments
+# Designed for cluster environments with cross-arch compatibility
+
+# ====================================================================
+# NON-INTERACTIVE SHELL GUARD
+# ====================================================================
+
+# If not running interactively, don't do anything
+case $- in
+    *i*) ;;
+    *) return;;
+esac
+
+# ====================================================================
+# ENVIRONMENT AND PATH
+# ====================================================================
+
+# Source the environment profile if it exists and we are in an interactive shell
+if [ -n "$PS1" ] && [ -f ~/.profile ]; then
+    . ~/.profile
+fi
+
+# ====================================================================
+# BASH HISTORY CONFIGURATION
+# ====================================================================
+
+# Don't put duplicate lines or lines starting with space in the history
+HISTCONTROL=ignoreboth
+
+# Append to the history file, don't overwrite it
+shopt -s histappend
+
+# History length settings
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# ====================================================================
+# BASH SHELL OPTIONS
+# ====================================================================
+
+# Check the window size after each command and update LINES and COLUMNS
+shopt -s checkwinsize
+
+# Enable extended globbing patterns
+shopt -s extglob
+
+# Enable case-insensitive globbing (if available)
+shopt -s nocaseglob 2>/dev/null || true
+
+# Enable recursive globbing with ** (if available)
+# shopt -s globstar
+
+# ====================================================================
+# TERMINAL AND PROMPT CONFIGURATION
+# ====================================================================
+
+# Set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# Set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
+
+# Use starship prompt if available, otherwise fall back to bash prompt
+if [[ $HAS_STARSHIP == 1 ]] && command -v starship >/dev/null 2>&1; then
+    eval "$(starship init bash)"
+else
+    # Fallback to colorized bash prompt
+    if [ "$color_prompt" = yes ]; then
+        PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    else
+        PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    fi
+    unset color_prompt
+fi
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
+
+# ====================================================================
+# COLOR SUPPORT AND ALIASES
+# ====================================================================
+
+# Enable color support of ls and add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+
+    # Use modern tools if available, with fallbacks
+    if [[ $HAS_EZA == 1 ]]; then
+        alias ls='eza --color=auto --group-directories-first'
+        alias ll='eza -la --color=auto --group-directories-first'
+        alias la='eza -a --color=auto --group-directories-first'
+        alias l='eza -F --color=auto --group-directories-first'
+    else
+        alias ls='ls --color=auto'
+        alias ll='ls -alF'
+        alias la='ls -A'
+        alias l='ls -CF'
+    fi
+
+    # Grep aliases with color
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# Modern tool aliases (with fallbacks handled by tool detection)
+if [[ $HAS_BAT == 1 ]]; then
+    if command -v bat >/dev/null 2>&1; then
+        alias cat='bat --paging=never'
+        alias ccat='bat'
+    elif command -v batcat >/dev/null 2>&1; then
+        alias cat='batcat --paging=never'
+        alias ccat='batcat'
+    fi
+fi
+
+if [[ $HAS_FD == 1 ]]; then
+    if command -v fd >/dev/null 2>&1; then
+        alias find='fd'
+    elif command -v fdfind >/dev/null 2>&1; then
+        alias find='fdfind'
+    fi
+fi
+
+# Additional useful aliases
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# Cluster-specific aliases
+if [ -d "/cluster-nas" ]; then
+    alias nas='cd /cluster-nas'
+    alias configs='cd /cluster-nas/configs'
+    alias colab='cd /cluster-nas/colab'
+fi
+
+# ====================================================================
+# PROGRAMMABLE COMPLETION
+# ====================================================================
+
+# Enable programmable completion features
+if ! shopt -oq posix; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
+fi
+
+# ====================================================================
+# MODERN TOOL INTEGRATIONS
+# ====================================================================
+
+# FZF integration (fuzzy finder)
+if [[ $HAS_FZF == 1 ]]; then
+    # Use fd for fzf if available (with unified detection)
+    if [[ $HAS_FD == 1 ]]; then
+        if command -v fd >/dev/null 2>&1; then
+            export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+        elif command -v fdfind >/dev/null 2>&1; then
+            export FZF_DEFAULT_COMMAND='fdfind --type f --hidden --follow --exclude .git'
+        fi
+    fi
+
+    # FZF key bindings and completion (if available)
+    if [ -f ~/.fzf.bash ]; then
+        source ~/.fzf.bash
+    elif [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
+        source /usr/share/doc/fzf/examples/key-bindings.bash
+    fi
+fi
+
+# Zoxide (smart cd) integration
+if [[ $HAS_ZOXIDE == 1 ]] && command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init bash)"
+    alias cd='z'
+    alias cdi='zi'  # Interactive mode
+fi
+
+# Atuin (better history) integration
+if [[ $HAS_ATUIN == 1 ]] && command -v atuin >/dev/null 2>&1; then
+    [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
+    eval "$(atuin init bash)"
+fi
+
+# ====================================================================
+# DEVELOPMENT ENVIRONMENT SETUP
+# ====================================================================
+
+# Cargo environment (Rust)
+if [ -f "$HOME/.cargo/env" ]; then
+    . "$HOME/.cargo/env"
+fi
+
+# NVM (Node Version Manager) initialization
+if [[ $HAS_NVM == 1 ]]; then
+{{ include ".chezmoitemplate.nvm-loader.sh" | trim }}
+fi
+
+# ====================================================================
+# USER-SPECIFIC CUSTOMIZATIONS
+# ====================================================================
+
+# Load additional aliases from separate file if it exists
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# Load node-specific customizations if they exist
+[[ -f ~/.bashrc.local ]] && source ~/.bashrc.local
+
+# Load any additional environment setup
+if [ -f ~/.local/bin/env ]; then
+    . ~/.local/bin/env
+fi
+
+# ====================================================================
+# CLUSTER NODE SPECIFIC CONFIGURATIONS
+# ====================================================================
+
+# Node-specific configurations using template variables (future enhancement)
+# These could be expanded using chezmoi templates for node-specific aliases
+case "$(hostname)" in
+    "cooperator")
+        # Gateway-specific aliases and functions
+        alias services='systemctl list-units --type=service'
+        alias nfs-status='systemctl status nfs-kernel-server'
+        ;;
+    "projector")
+        # Compute node specific aliases
+        alias gpu-status='nvidia-smi'
+        alias gpu-watch='watch -n 1 nvidia-smi'
+        ;;
+    "director")
+        # ML platform specific aliases
+        alias gpu-status='nvidia-smi'
+        alias ml-env='cd /cluster-nas/ml-workspace'
+        ;;
+esac
+
+# ====================================================================
+# PERFORMANCE AND DEBUGGING
+# ====================================================================
+
+# Uncomment for bash startup debugging
+# echo "Bash startup complete: $(date)"
+
+# Make less more friendly for non-text input files
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# ====================================================================
+# END OF BASHRC CONFIGURATION
+# ====================================================================
