@@ -6,11 +6,9 @@
 # ESSENTIAL CONFIGURATIONS (ALWAYS LOADED)
 # ====================================================================
 
-# Load environment profile for PATH and environment variables
-# This must happen for both interactive and non-interactive shells
-if [ -f ~/.profile ]; then
-    . ~/.profile
-fi
+# NOTE: .profile sources .bashrc, so we don't source .profile here
+# to avoid circular dependency. Environment variables and PATH
+# are inherited from the parent shell that sourced .profile
 
 # ====================================================================
 # BASIC ALIASES (ALWAYS AVAILABLE)
