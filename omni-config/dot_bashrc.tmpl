@@ -3,23 +3,86 @@
 # Designed for cluster environments with cross-arch compatibility
 
 # ====================================================================
-# NON-INTERACTIVE SHELL GUARD
+# ESSENTIAL CONFIGURATIONS (ALWAYS LOADED)
 # ====================================================================
 
-# If not running interactively, don't do anything
+# Load environment profile for PATH and environment variables
+# This must happen for both interactive and non-interactive shells
+if [ -f ~/.profile ]; then
+    . ~/.profile
+fi
+
+# ====================================================================
+# BASIC ALIASES (ALWAYS AVAILABLE)
+# ====================================================================
+
+# Enable color support of ls and add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+
+    # Use modern tools if available, with fallbacks
+    if [[ $HAS_EZA == 1 ]]; then
+        alias ls='eza --color=auto --group-directories-first'
+        alias ll='eza -la --color=auto --group-directories-first'
+        alias la='eza -a --color=auto --group-directories-first'
+        alias l='eza -F --color=auto --group-directories-first'
+    else
+        alias ls='ls --color=auto'
+        alias ll='ls -alF'
+        alias la='ls -A'
+        alias l='ls -CF'
+    fi
+
+    # Grep aliases with color
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# Modern tool aliases (with fallbacks handled by tool detection)
+if [[ $HAS_BAT == 1 ]]; then
+    if command -v bat >/dev/null 2>&1; then
+        alias cat='bat --paging=never'
+        alias ccat='bat'
+    elif command -v batcat >/dev/null 2>&1; then
+        alias cat='batcat --paging=never'
+        alias ccat='batcat'
+    fi
+fi
+
+if [[ $HAS_FD == 1 ]]; then
+    if command -v fd >/dev/null 2>&1; then
+        alias find='fd'
+    elif command -v fdfind >/dev/null 2>&1; then
+        alias find='fdfind'
+    fi
+fi
+
+# Additional useful aliases
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# Cluster-specific aliases
+if [ -d "/cluster-nas" ]; then
+    alias nas='cd /cluster-nas'
+    alias configs='cd /cluster-nas/configs'
+    alias colab='cd /cluster-nas/colab'
+fi
+
+# ====================================================================
+# INTERACTIVE SHELL GUARD
+# ====================================================================
+
+# If not running interactively, skip the rest (prompts, history, completion)
 case $- in
     *i*) ;;
     *) return;;
 esac
 
 # ====================================================================
-# ENVIRONMENT AND PATH
+# INTERACTIVE-ONLY CONFIGURATIONS
 # ====================================================================
-
-# Source the environment profile if it exists and we are in an interactive shell
-if [ -n "$PS1" ] && [ -f ~/.profile ]; then
-    . ~/.profile
-fi
 
 # ====================================================================
 # BASH HISTORY CONFIGURATION
@@ -87,63 +150,7 @@ xterm*|rxvt*)
     ;;
 esac
 
-# ====================================================================
-# COLOR SUPPORT AND ALIASES
-# ====================================================================
-
-# Enable color support of ls and add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-
-    # Use modern tools if available, with fallbacks
-    if [[ $HAS_EZA == 1 ]]; then
-        alias ls='eza --color=auto --group-directories-first'
-        alias ll='eza -la --color=auto --group-directories-first'
-        alias la='eza -a --color=auto --group-directories-first'
-        alias l='eza -F --color=auto --group-directories-first'
-    else
-        alias ls='ls --color=auto'
-        alias ll='ls -alF'
-        alias la='ls -A'
-        alias l='ls -CF'
-    fi
-
-    # Grep aliases with color
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
-
-# Modern tool aliases (with fallbacks handled by tool detection)
-if [[ $HAS_BAT == 1 ]]; then
-    if command -v bat >/dev/null 2>&1; then
-        alias cat='bat --paging=never'
-        alias ccat='bat'
-    elif command -v batcat >/dev/null 2>&1; then
-        alias cat='batcat --paging=never'
-        alias ccat='batcat'
-    fi
-fi
-
-if [[ $HAS_FD == 1 ]]; then
-    if command -v fd >/dev/null 2>&1; then
-        alias find='fd'
-    elif command -v fdfind >/dev/null 2>&1; then
-        alias find='fdfind'
-    fi
-fi
-
-# Additional useful aliases
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-
-# Cluster-specific aliases
-if [ -d "/cluster-nas" ]; then
-    alias nas='cd /cluster-nas'
-    alias configs='cd /cluster-nas/configs'
-    alias colab='cd /cluster-nas/colab'
-fi
+# (Aliases moved to essential configurations section above)
 
 # ====================================================================
 # PROGRAMMABLE COMPLETION

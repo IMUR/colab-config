@@ -115,9 +115,10 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 # SHELL RC LOADING
 # ====================================================================
 
-# Load shell-specific RC files for interactive shells only
+# Load shell-specific RC files for ALL shells (interactive and non-interactive)
+# The RC files themselves now handle the interactive/non-interactive distinction
 if [ -n "$BASH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
-    # Running bash and bashrc exists
+    # Running bash and bashrc exists - load it for aliases and additional configs
     . "$HOME/.bashrc"
 fi
 
