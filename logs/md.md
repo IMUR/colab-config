@@ -1,25 +1,118 @@
-1. `echo "=== Phase 3: Complete Package Removal ===" && echo "Identifying Docker packages:" && ssh prtr "dpkg -l | grep -i docker | awk '{print \$2}'" && echo "=== Removing Docker packages ===" && ssh prtr "sudo apt remove --purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && sudo apt autoremove -y"`
+Based on the Phase 1: Environmental Assessment from your claude-code migration plan, here are individual prompts for a cursor AI background agent to execute each assessment task:
 
-2. `echo "=== Removing actual Docker packages ===" && ssh prtr "sudo apt remove --purge -y docker-buildx docker-cli docker-compose docker-desktop docker.io && sudo apt autoremove -y"`
+## 📋 Phase 1 Assessment Prompts for Background Agent
 
-3. `echo "=== Identifying NVIDIA packages ===" && ssh prtr "dpkg -l | grep -i nvidia | awk '{print \$2}'" && echo "=== Removing NVIDIA packages ===" && ssh prtr "sudo apt remove --purge -y \$(dpkg -l | grep -i nvidia | awk '{print \$2}') && sudo apt autoremove -y"`
+### **Prompt 1: System Node.js Assessment**
 
-4. `echo "=== System Configuration Cleanup ===" && ssh prtr "sudo rm -rf /etc/docker /var/lib/docker ~/.docker /etc/nvidia /usr/local/cuda* /opt/nvidia* && echo 'Configuration directories cleaned' && sudo apt clean && sudo apt autoclean && echo 'Package cache cleaned'"`
+```
+Check the system Node.js installation status on crtr. Execute these commands via SSH:
+1. Check if system Node exists at /usr/bin/node and get version
+2. Verify if the path /usr/bin/node is a real binary or symlink
+3. Check system npm at /usr/bin/npm and version
+4. Determine if system Node version is ≥18.x for compatibility
+Report findings in a structured format including:
+- System Node present: Yes/No
+- Version if present
+- Path type (binary/symlink)
+- Adequacy for claude-code (requires ≥18.x)
+```
 
-5. `ssh prtr "sudo rm -rf /etc/docker /var/lib/docker ~/.docker /etc/nvidia && find /usr/local -name 'cuda*' -type d 2>/dev/null | xargs sudo rm -rf && find /opt -name 'nvidia*' -type d 2>/dev/null | xargs sudo rm -rf && echo 'Configuration directories cleaned' && sudo apt clean && sudo apt autoclean && echo 'Package cache cleaned'"`
+### **Prompt 2: NVM Installation Assessment**
 
-6. `echo "=== Final Verification ===" && ssh prtr "echo 'Checking for remaining packages:' && dpkg -l | grep -E '(docker|nvidia)' || echo 'No Docker/NVIDIA packages found' && echo 'Checking for running processes:' && ps aux | grep -E '(docker|nvidia)' | grep -v grep || echo 'No Docker/NVIDIA processes found' && echo 'System ready for reboot'"`
+```
+Assess the NVM (Node Version Manager) installation on crtr:
+1. Check if ~/.nvm directory exists
+2. Source NVM and get version (source ~/.nvm/nvm.sh && nvm --version)
+3. List all installed Node versions via NVM (nvm list)
+4. Identify current default NVM Node version
+5. Check if NVM is properly configured in shell RC files
+Document:
+- NVM installation path
+- NVM version
+- Installed Node versions
+- Current active version
+- Shell integration status
+```
 
-7. `echo "=== Initiating System Reboot ===" && echo "NVIDIA kernel threads detected - reboot required for complete cleanup" && ssh prtr "echo 'Rebooting prtr for complete cleanup...' && sudo reboot" && echo "=== prtr reboot initiated ==="`
+### **Prompt 3: Claude-Code Installation Discovery**
 
-8. `echo "=== Waiting for prtr to reboot ===" && sleep 30 && echo "=== Testing prtr connectivity ===" && ssh prtr "hostname && echo 'prtr is back online' && echo 'Verifying clean state:' && dpkg -l | grep -E '(docker|nvidia)' || echo 'SUCCESS: No Docker/NVIDIA packages found' && ps aux | grep -E '(docker|nvidia)' | grep -v grep || echo 'SUCCESS: No Docker/NVIDIA processes found'"`
+```
+Locate and assess claude-code installation on crtr:
+1. Check if claude-code is in PATH without NVM (which claude-code)
+2. Check claude-code with NVM sourced (source ~/.nvm/nvm.sh && which claude-code)
+3. Get claude-code version if accessible
+4. Identify installation method (npm global, local, other)
+5. Check the shebang line of claude-code binary to see which Node it uses
+Report:
+- Installation location(s)
+- Version information
+- Node interpreter path from shebang
+- Accessibility without NVM environment
+```
 
-9. `ssh prtr "echo '=== All Containers (including stopped) ===' && docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' 2>/dev/null && echo '=== Docker Images ===' && docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}' 2>/dev/null"`
+### **Prompt 4: Authentication & Configuration Assessment**
 
-10. `BACKUP_DIR="containerization/archon-backup/20250917-185528" && echo "Working in: $BACKUP_DIR" && echo "=== Exporting Archon Container Images from prtr ===" && ssh prtr "docker save -o /tmp/archon-images.tar archon-frontend:latest archon-archon-mcp:latest archon-archon-server:latest archon-archon-agents:latest pgvector/pgvector:pg16 postgrest/postgrest:v12.2.0 adminer:4.8.1 && ls -lh /tmp/archon-images.tar"`
+```
+Examine claude-code authentication and configuration files on crtr:
+1. List all .claude* files/directories in home directory
+2. Check for ~/.config/claude* configuration
+3. Identify credential storage locations if present
+4. Check for agent configurations in ~/.claude/agents/
+5. Note any API keys or tokens (report presence only, not values)
+Document findings:
+- Configuration file locations
+- Credential file presence (DO NOT expose actual credentials)
+- Agent configurations found
+- Authentication method in use (if determinable)
+```
 
-11. `echo "=== Copying Archon Images to Backup Directory ===" && scp prtr:/tmp/archon-images.tar containerization/archon-backup/20250917-185528/ && echo "=== Preserving Systemd Service Configuration ===" && ssh prtr "systemctl cat archon.service > /tmp/archon.service.backup && systemctl cat ollama.service > /tmp/ollama.service.backup" && scp prtr:/tmp/archon.service.backup prtr:/tmp/ollama.service.backup .archive/stage1-prtr-preservation/20250917-185528/`
+### **Prompt 5: Functionality Testing**
 
-12. `echo "=== Documenting Current System State ===" && ssh prtr "docker info > /tmp/docker-info.txt && docker version > /tmp/docker-version.txt && nvidia-smi > /tmp/nvidia-status.txt 2>/dev/null || echo 'NVIDIA status captured' > /tmp/nvidia-status.txt && systemctl list-units --type=service | grep -E '(docker|nvidia|archon|ollama)' > /tmp/services-status.txt" && scp prtr:/tmp/{docker-info.txt,docker-version.txt,nvidia-status.txt,services-status.txt} .archive/stage1-prtr-preservation/20250917-185528/`
+```
+Test current claude-code functionality on crtr:
+1. Test basic execution without NVM (claude-code --version)
+2. Test with NVM environment (source ~/.nvm/nvm.sh && claude-code --version)
+3. Test search functionality (claude-code search "test query")
+4. Test agent detection (claude-code agent list)
+5. Test authentication status (claude-code auth status)
+Create functionality matrix:
+- Basic execution: Working/Broken (with/without NVM)
+- Search feature: Working/Broken
+- Agent detection: Working/Broken
+- Authentication: Working/Broken/Needs re-auth
+- Note specific error messages for broken features
+```
 
-13. `echo "=== Phase 2: Graceful Service Shutdown on prtr ===" && echo "Current service status:" && ssh prtr "systemctl is-active archon.service ollama.service docker.service docker.socket" && echo "=== Stopping services in correct order ===" && ssh prtr "sudo systemctl stop archon.service && echo 'archon.service stopped' && sudo systemctl stop ollama.service && echo 'ollama.service stopped' && sudo systemctl stop docker.service docker.socket && echo 'Docker services stopped'"`
+### **Prompt 6: Comprehensive Status Summary**
+
+```
+Create a comprehensive assessment summary for crtr's claude-code setup:
+Compile all findings from previous assessments into a status report including:
+1. Current Node.js environment (System vs NVM)
+2. Claude-code installation method and location
+3. Working vs broken features matrix
+4. Dependencies and PATH issues identified
+5. Recommended migration approach based on findings
+Format as markdown table with clear Yes/No/Partial status indicators and specific version numbers where applicable. Include a risk assessment for the migration based on current state.
+```
+
+### **Master Orchestration Prompt**
+
+```
+Execute a complete Phase 1 Environmental Assessment for claude-code on crtr node. Run all assessment tasks in sequence:
+1. System Node.js check
+2. NVM installation verification  
+3. Claude-code discovery
+4. Authentication/configuration audit
+5. Functionality testing
+6. Summary report generation
+Store all outputs in timestamped files for reference. Flag any critical issues that would block migration. Maintain rollback information throughout. Do not modify any configurations during assessment - this is read-only discovery.
+```
+
+These prompts are designed to be:
+
+- **Specific and actionable** for a background agent
+- **Non-destructive** (assessment only, no changes)
+- **Structured for clear reporting**
+- **Sequential but independent** (can run individually or as a batch)
+Would you like me to create similar prompts for the other migration phases, or would you prefer to refine these Phase 1 prompts first?
