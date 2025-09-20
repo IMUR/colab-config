@@ -1,0 +1,114 @@
+---
+# User-Level Ansible Master Playbook
+# Purpose: Complete user environment orchestration across cluster nodes
+# Scope: User $HOME directory configurations only (no sudo operations)
+
+# ========================================================================
+# USER ENVIRONMENT FOUNDATION
+# ========================================================================
+
+- name: "Phase 1: User Development Environment"
+  import_playbook: user-environment.yml
+  tags: [environment, foundation]
+
+# ========================================================================
+# PERSONAL SERVICES CONFIGURATION
+# ========================================================================
+
+- name: "Phase 2: Personal Services and Integrations"
+  import_playbook: personal-services.yml
+  tags: [services, integrations]
+
+# ========================================================================
+# COMPREHENSIVE VALIDATION
+# ========================================================================
+
+- name: "Phase 3: User Environment Validation"
+  import_playbook: user-validation.yml
+  tags: [validation, testing]
+
+# ========================================================================
+# DEPLOYMENT SUMMARY
+# ========================================================================
+
+- name: "User Environment Deployment Summary"
+  hosts: localhost
+  become: no
+  gather_facts: no
+  tags: [always]
+
+  tasks:
+    - name: Generate user deployment completion report
+      debug:
+        msg: |
+          ╔════════════════════════════════════════════════════════════════╗
+          ║              User Environment Deployment Complete             ║
+          ╚════════════════════════════════════════════════════════════════╝
+
+          🧑‍💻 USER ENVIRONMENT CONFIGURED:
+          ✓ Development workspace structure created
+          ✓ Git configuration applied globally
+          ✓ SSH client configuration for cluster nodes
+          ✓ Node-specific development environments
+
+          🛠️ PERSONAL SERVICES DEPLOYED:
+          ✓ Development tool integrations (NVM, Python, Rust)
+          ✓ Node-specific helper scripts and tools
+          ✓ User-level service management utilities
+          ✓ Workspace and project structure templates
+
+          🔄 INTEGRATION VALIDATED:
+          ✓ System + User configuration integration tested
+          ✓ Tool detection and availability confirmed
+          ✓ Cluster connectivity and NFS access verified
+          ✓ Node-specific capabilities validated
+
+          📊 USER ORCHESTRATION COMPLETE:
+          ✓ Cooperator: Web development and cluster management tools
+          ✓ Projector: GPU and container development environments
+          ✓ Director: ML and data science development platforms
+
+          🎯 NEXT STEPS:
+
+          1. VERIFY USER ENVIRONMENT:
+             for node in crtr prtr drtr; do
+                 ssh $node '~/.local/bin/validate-user-environment'
+             done
+
+          2. TEST PERSONAL SERVICES:
+             for node in crtr prtr drtr; do
+                 ssh $node '~/.local/bin/validate-user-services'
+             done
+
+          3. RUN COMPREHENSIVE VALIDATION:
+             ansible-playbook omni-config/ansible/playbooks/user-validation.yml
+
+          4. USE NODE-SPECIFIC TOOLS:
+             # On cooperator:
+             ssh crtr '~/.local/bin/web-dev-server'
+             ssh crtr '~/.local/bin/cluster-mgmt status'
+
+             # On projector:
+             ssh prtr '~/.local/bin/gpu-dev-setup check'
+             ssh prtr '~/.local/bin/container-dev-setup setup'
+
+             # On director:
+             ssh drtr '~/.local/bin/ml-dev-setup setup'
+             ssh drtr '~/.local/bin/data-science-setup setup'
+
+          📚 USER DOCUMENTATION:
+          - User workspace: ~/workspace/docs/[node]-profile.md
+          - Validation reports: ~/.local/share/validation-report-*.txt
+          - Development tools: ~/.local/bin/[tool]-setup scripts
+
+          🔧 AVAILABLE USER COMMANDS:
+          - validate-user-environment
+          - validate-user-services
+          - dev-env-status
+          - [development-tool]-setup scripts
+          - [node-role]-specific helper scripts
+
+          ═══════════════════════════════════════════════════════════════
+          User Environment: COMPLETE ORCHESTRATION DEPLOYED
+          Strategic Hybrid: System Foundation + User Orchestration = SUCCESS
+          ═══════════════════════════════════════════════════════════════

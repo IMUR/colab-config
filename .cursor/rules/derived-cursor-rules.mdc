@@ -9,7 +9,7 @@ This AI coding assistant rules file defines all project rules, coding standards,
 
 ## PROJECT DESCRIPTION
 
-The "colab-config" project aims to provide a comprehensive infrastructure configuration for a 3-node co-lab cluster (cooperator, projector, director) using a strategic hybrid approach.
+The "colab-config" project aims to provide a comprehensive infrastructure configuration for a 3-node co-lab cluster (cooperator, projector, director) using a strategic hybrid approach. The project involves a complete infrastructure reset to achieve unified, optimal configuration management, modernizing the stack while preserving critical applications.
 
 ## TECH STACK
 
@@ -18,34 +18,43 @@ The "colab-config" project aims to provide a comprehensive infrastructure config
 - Zsh: As the preferred shell environment.
 - Git: For version control and collaboration.
 - VSCode Extension 'alefragnani.project-manager': Helps manage project-related tasks within VSCode. This extension helps manage project-related tasks within VSCode.
+- jq: A lightweight and flexible command-line JSON processor.
+- fastfetch: A command-line system information tool.
 
 ## PROJECT STRUCTURE
 
 ```
 colab-config/
-├── 🎯 omni-config/        # PRIMARY: User configurations (chezmoi)
-│   ├── dot_zshrc         # Modern shell configuration
-│   ├── dot_profile       # Modern shell configuration
-│   ├── dot_config/       # Tool configurations (starship, etc.)
-│   └── tools/            # Tool-specific settings
-├── 🔧 ansible/            # MINIMAL: System-level only
-│   ├── playbooks/        # Health checks, basic system setup
-│   ├── inventory/        # Node definitions
-│   └── group_vars/       # Basic node grouping
-├── 📚 documentation/      # Comprehensive guides
-│   ├── architecture/     # System design
-│   ├── procedures/     # Deployment guides
-│   └── AI-AGENT-*.md     # Agent-focused procedures
-├── 🛠️ services/          # Optional service configs
-├── 🏗️ infrastructure/    # Supporting configurations
-└── 📜 scripts/           # Utility scripts
+├── .chezmoiroot                    # Points to "omni-config"
+├── 🎯 omni-config/                    # CONFIGURATION MANAGEMENT - Chezmoi source directory
+│   ├── dot_*.tmpl                  # MUST stay here (Chezmoi root)
+│   ├── dot_config/                 # MUST stay here
+│   ├── .chezmoitemplate.*          # MUST stay here
+│   ├── ansible/                    # User-level Ansible (can stay)
+│   ├── validation/                 # Can add for organization
+│   ├── scripts/                    # Can add for organization
+│   └── README.md                   # Documentation
+├── 🎯 crtr-config/                    # Cooperator-specific configs
+├── 🎯 prtr-config/                    # Projector-specific configs
+├── 🎯 drtr-config/                    # Director-specific configs
+├── 🛠️ system-ansible/                 # System-level configurations (Renamed from 'ansible/' for clarity)
+│   ├── playbooks/
+│   ├── inventory/
+│   ├── group_vars/
+│   └── host_vars/
+├── 🛠️ deployment/                      # DEPLOYMENT UTILITIES
+│   └── scripts/                        # Deployment and validation scripts
+├── 📚 documentation/                   # Comprehensive guides
+├── 🛠️ services/                        # Service configurations
+└── 🏗️ infrastructure/                  # Supporting configurations
 ```
 
 ### Focus Areas:
 
-- **🎯 omni-config/**: **Primary focus** - Rich user experience via chezmoi
-- **🔧 ansible/**: **Minimal usage** - Basic system preparation only
-- **📚 documentation/**: **Comprehensive** - Clear deployment procedures
+- **🎯 omni-config/**: **Primary focus** - Universal user experience via Chezmoi
+- **🎯 {node}-config/**: **Node-specific** - Custom configurations per node
+- **🛠️ system-ansible/**: **Minimal usage** - System-level operations only
+- **🛠️ deployment/scripts/**: **Deployment orchestration** - Hybrid approach automation
 
 ## CONFIGURATION MANAGEMENT
 
@@ -177,7 +186,7 @@ Now that you have defined these roles and capabilities, your main dotfile templa
 path_prepend "/usr/local/cuda/bin"
 {{ end -}}
 ```
-This is much cleaner than `{{ if or (eq .chezmoi.hostname "prtr") (eq .chezmoi.hostname "drtr") }}`.
+This is much cleaner than `{{ if or (eq .chezmoi.hostname "prtr") (eq .node_role "drtr") }}`.
 
 **Example in `dot_zshrc.tmpl`:**
 ```go-template
@@ -212,6 +221,40 @@ By using this method:
 
 This custom variable approach is the most professional and scalable way to manage a diverse set of machines from a single, clean configuration repository, and it is the ideal method for your Co-lab cluster.
 
+### Strategic Hybrid Configuration
+
+Your system is implementing a sophisticated **Strategic Hybrid Configuration** approach with:
+
+- **System-Level**: Minimal Ansible for infrastructure and services
+- **User-Level**: Chezmoi templates for cross-node user environment consistency
+- **Bridge Layer**: User ansible for personal configuration orchestration (Note: Use with caution, validate need)
+- **Validation**: Comprehensive automated validation with change tracking
+
+### Infrastructure Reset Stages
+The current objective is a three-stage infrastructure reset:
+
+#### **Stage 1: Complete Removal & Cleaning** ⚠️
+- **Critical Discovery**: Archon runs in dual-stack mode (BOTH systemd service AND containers)
+- Preserve 100% of Archon infrastructure including PostgreSQL data volumes
+- Preserve Ollama systemd service
+- Complete removal of NVIDIA and Docker packages for clean slate
+- System cleanup and reboot for fresh start
+- **Stage 1 Completed Successfully on prtr node**
+
+#### **Stage 2: Unified Configuration Deployment** 🎯
+- Deploy Chezmoi-based configuration management across all nodes
+- Implement node-specific templates with capability detection (has_gpu, node_role)
+- Template-driven approach for consistent yet flexible configuration
+- Minimal Ansible usage (only for essential system-level configs)
+- This aligns with your ongoing work converting `dot_profile`
+
+#### **Stage 3: Strategic Reinstallation** 🚀
+- Install modern NVIDIA stack (drivers 560.x + CUDA 12.6+)
+- Clean Docker installation with optimized GPU integration
+- nvidia-container-toolkit for GPU passthrough
+- Restore Archon dual-stack functionality
+- Restore all services with enhanced GPU acceleration
+
 ## WORKFLOW & RELEASE RULES
 
 1.  Create feature branches for new development.
@@ -219,17 +262,17 @@ This custom variable approach is the most professional and scalable way to manag
 3.  Write clear and descriptive commit messages.
 4.  Use pull requests for code review.
 5.  All dangerous Ansible playbooks (e.g., `uid-standardization.yml`, `tool-standardization.yml`, `system-update.yml`) must be deleted immediately.
-6. The project is currently operating in the 'backup' branch until key issues are resolved.
+6. The project is currently operating in the 'main' branch.
 7.  `@AI-AGENT-DEPLOYMENT-GUIDE.md` should be deleted immediately.
 8.  `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be renamed to `COLAB-CLUSTER-ARCHITECTURE.md`.
 9. A new `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be created that contains a simple index.
-10. Only changes to the current branch (backup) of the colab-config repo are permitted until further notice.
+10. Only changes to the current branch (main) of the colab-config repo are permitted until further notice.
 11. Acquire objective knowledge when assumptions could cause issues.
 12. Don't loose sight of big-picture goals when approaching tasks or sub-tasks.
 13. The `omni-config/INSTALL.md` file must be deleted.
 14. The  `archive` directory should be renamed to `.archive` and added to the `.gitignore`.
 15. The `.cursor/` and `.specstory/` directories must be added to the `.gitignore` file.
-16. ~~The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.~~
+16. The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.
 17. Obsolete files should be moved to the `.archive/` directory.
 18. Automation is key, avoiding manual interventions. The tool (chezmoi) is designed to handle template rendering and distribution seamlessly, eliminating the need for manual file manipulation. The correct chezmoi workflow should be:
     - `dot_profile.tmpl` gets rendered by chezmoi into `~/.profile` on each target node
@@ -243,6 +286,24 @@ This custom variable approach is the most professional and scalable way to manag
     - `zprofile`
     - `zlogout`
 22. The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.
+23. The `.archive/` directory should be used for backups.
+24. The `containerization/` directory should be used for current containers.
+25. Validate current `omni-config` + chezmoi before adding complexity:
+    ```bash
+    chezmoi status
+    for node in crtr prtr drtr; do
+        ssh $node 'source ~/.profile && echo "NODE_ROLE: $NODE_ROLE, ARCH: $ARCH"'
+    done
+    ```
+26. Assess real vs theoretical needs before implementing new features or configurations. Ensure changes solve actual pain points.
+27. Start minimal, prove value. Implement one small use case, validate it provides real benefit, and expand only after proving necessity.
+28. When installing NVIDIA drivers, use meta-packages instead of specific versions: `sudo apt install -y nvidia-driver cuda nvidia-container-toolkit`. Let apt resolve best compatible versions.
+29. Test on one node first (prtr) before applying changes to all nodes.
+30. After successful execution of a one-time use execution script, consider moving it to `/cluster-nas/colab/colab-config/scripts/` for future reference, or archiving it to `/cluster-nas/colab/colab-config/.archive/`.
+31. **Under no circumstances** should the AI execute any scripts for one-time jobs.
+32. The AI should carry out intended actions directly so that each step can be validated.
+33. When reorganizing the project structure, use `git mv` instead of `mv` to preserve git history.
+34. During project reorganization, create symlinks for backward compatibility during the transition period.
 
 ## CODING STANDARDS
 
@@ -264,6 +325,7 @@ This custom variable approach is the most professional and scalable way to manag
 2.  Validate changes using appropriate testing commands.
 3.  Check system logs for errors.
 4.  Use `chezmoi diff` to preview changes before applying.
+5. When executing commands, ensure you are operating from the correct machine.
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -333,6 +395,112 @@ for node in crtr prtr drtr; do
 done
 ```
 
+### Documentation Index
+
+This comprehensive index covers all documentation in the Co-lab cluster configuration project, organized by category and type. The project contains extensive documentation totaling over 2,950 lines across multiple domains.
+
+## 📚 Core Project Documentation
+
+### **Main Repository Files**
+- **`README.md`** (Project Root) - Complete project overview, hybrid architecture strategy, quick start guide, and operational procedures
+- **`START-HERE.md`** - Navigation guide for the three-stage infrastructure optimization process
+- **`CLAUDE.md`** - Repository guidelines for AI agents (contains project rules and coding standards)
+- **`STAGE2-VALIDATION-CHECKLIST.md`** - Validation checklist for Stage 2 completion
+- **`STAGE2-VALIDATION-COMPLETE.md`** - Stage 2 completion confirmation
+- **`STAGE3-PROGRESS-REPORT.md`** - Complete Progress Report of Stage 3 GPU & Docker Implementation
+
+### **Architecture Documentation**
+- **`documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md`** - Complete cluster architecture overview, node roles, network design, and hybrid configuration strategy
+- **`documentation/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md`** (665 lines) - Comprehensive GPU stack deployment strategy
+- **`documentation/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md`** (850 lines) - Docker optimization with Archon preservation procedures
+- **`documentation/architecture/README.md`** - Architecture documentation index
+
+### **Operational Procedures**
+- **`documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md`** (800 lines) - Master reset procedure for complete infrastructure optimization
+- **`documentation/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md`** (640 lines) - Critical service management procedures for infrastructure reset
+- **`documentation/procedures/README.md`** - Deployment procedures overview
+
+## ⚙️ Configuration Management Documentation
+
+### **Omni-Config System**
+- **`omni-config/README.md`** - Universal user environment documentation, template system, and deployment architecture
+- **`omni-config/documentation/architecture/DESIGN_PRINCIPLES.md`** - Configuration hierarchy and tool integration strategy
+- **`omni-config/PLATONIC-NODE-GUIDE.md`** - Reference implementation guide for theoretical ideal state
+
+### **Ansible Configuration**
+- **`ansible/README.md`** - Ansible playbooks documentation
+- **`ansible/playbooks/README.md`** - Playbook-specific documentation
+- **`ansible/group_vars/all/hardware_profiles.yml`** - Hardware configuration profiles
+- **`ansible/host_vars/cooperator/specific.yml`** - Node-specific configurations
+
+### 🛠️ Implementation and Support Documentation
+
+### **Scripts and Utilities**
+- **`scripts/active/README.md`** - Production scripts documentation
+- **`scripts/active/cli-tools-test.sh`** - CLI tools validation utility
+- **`scripts/active/sync-claude-configs.sh`** - Claude configuration synchronization
+- **`scripts/active/uv-cluster-migration.sh`** - UV package manager migration automation
+- **`scripts/active/update-docs.sh`** - Documentation maintenance utility
+
+### **Service Configuration**
+- **`services/README.md`** - Service configurations overview
+- **`services/semaphore/repo_key`** and related files - Semaphore automation service keys
+
+### **Infrastructure Configuration**
+- **`infrastructure/fastfetch/config.jsonc`** - System information display configuration
+- **`infrastructure/ssh/remote-access-config`** - SSH remote access configuration
+- **`infrastructure/starship/starship.toml`** - Shell prompt configuration
+
+## 📊 Logs and Historical Documentation
+
+### **Project Logs and Status**
+- **`logs/2025-09-17-prtr-nvm-starship-issue.md`** - Technical issue documentation
+- **`logs/2025-09-17-we-need-to-verify-the-node-specific-installations.txt`** - Node verification requirements
+- **`logs/2025-09-20-could-you-come-up-with-a-checklist-for-validating.txt`** - Validation checklist request
+- **`logs/cursor_familiarize_with_project_goals.md`** - AI agent familiarization with project objectives
+- **`logs/cursor_review_checklist_for_validating.md`** - Review checklist for validation
+- **`logs/cursor_troubleshooting_node_alignment_a.md`** - Node alignment troubleshooting
+
+### **Containerization Documentation**
+- **`containerization/archon-backup/20250917-185528/PRESERVATION_MANIFEST.md`** - Archon preservation manifest
+- **`containerization/archon-backup/20250917-185528/archon-images.tar`** - Preserved container images
+
+## 🔍 Comparison and Testing Documentation
+
+### **Node Comparison Data**
+- **`compare/crtr/`** - Cooperator node comparison data
+- **`compare/drtr/`** - Director node comparison data  
+- **`compare/prtr/`** - Projector node comparison data
+
+### **Testing Scripts**
+- **`scripts/testing/README.md`** - Testing utilities documentation
+- **`scripts/testing/zsh-alignment-test.sh`** - ZSH configuration testing
+- **`scripts/testing/zsh-simple-test.sh`** - Basic ZSH functionality testing
+
+## 📈 Project Status and Validation
+
+### **Current Implementation Status**
+The project implements a **hybrid configuration management strategy**:
+- **System-Level**: Minimal Ansible for infrastructure and services
+- **User-Level**: Chezmoi templates for cross-node user environment consistency
+- **Template System**: Node-specific customization via `.chezmoi.toml.tmpl`
+- **Deployment**: GitHub remote with local working directory approach
+
+### **Three-Stage Infrastructure Reset**
+1. **Complete Removal & Cleaning** - NVIDIA/Docker package removal with 100% Archon preservation
+2. **Unified Configuration Deployment** - Chezmoi-based configuration management across all nodes
+3. **Strategic Reinstallation** - Modern software stack with GPU optimization
+
+### **Key Success Metrics**
+- ✅ 20-minute deployment capability
+- ✅ Zero system risk (user-level changes only)
+- ✅ Cross-node consistency via templates
+- ✅ Node-specific adaptation via templating
+- ✅ Industry-standard Git workflow
+- ✅ Comprehensive rollback procedures
+
+This documentation index provides complete coverage of the Co-lab cluster infrastructure project, from high-level architecture to detailed implementation procedures. The extensive documentation supports the project's goal of achieving unified, optimal configuration management across the 3-node cluster.
+
 ## SECURITY
 
 1.  Follow security best practices for Ansible and Chezmoi.
@@ -384,7 +552,8 @@ When troubleshooting, consider the following:
 
 - The `dot_profile` file must be converted to a template (`dot_profile.tmpl`) to enable node-specific customizations. This resolves the `prtr` shell initialization issue by ensuring a uniform approach to shell setup, using the pre-existing node metadata already defined in the chezmoi configuration.
 - Templating the profile would resolve the SSH session initialization issues by ensuring a uniform approach to shell setup, using the pre-existing node metadata already defined in the chezmoi configuration.
-- ~~The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.~~
+- The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.
+
 ### Template Solution Structure:
 ```bash
 # dot_profile.tmpl
@@ -421,7 +590,7 @@ Great question! The symlink check reveals a **hybrid configuration system**:
 2. **Chezmoi Files**: Shell RC files (`.profile`, `.zshrc`, `.bashrc`) → Regular files managed by chezmoi
 3. **Clean Status**: All nodes show empty `chezmoi status` (up to date)
 
-### Key Finding: 
+### Key Finding:
 The main shell files are **regular files** (not symlinks), confirming chezmoi is managing them properly.
 
 ### Node-Specific Symlink Patterns:
@@ -430,7 +599,7 @@ The main shell files are **regular files** (not symlinks), confirming chezmoi is
 - **Minimal symlinks**: Mostly deep cache/development symlinks
 - **3 ZSH system symlinks** to `/cluster-nas/configs/zsh/`
 
-**prtr (projector)**:  
+**prtr (projector)**:
 - **MASSIVE symlink proliferation**: Hundreds of symlinks!
 - **Application-heavy**: Brave Browser, Docker Desktop, systemd services
 - **Visual browser impact**: These user-level app symlinks show up in file managers
@@ -478,181 +647,4 @@ Think of the shell startup as building layers, from the most fundamental environ
 *   **Their First Action:** They **MUST** source `~/.profile` at the very top. This is the critical step that guarantees a consistent environment, no matter how the shell was started.
     *   In `.zshrc`: `emulate sh -c 'source ~/.profile'`
     *   In `.bashrc`: `. ~/.profile`
-*   **What Goes Here:** Aliases, shell functions, prompt setup (`starship init`), and loading interactive tools (`zoxide init`, FZF keybindings, NVM functions).
-
-#### 3. **`.chezmoitemplate.*` files are for Reusability (DRY Principle)**
-*   **Their Job:** Hold any code snippet that you would otherwise have to copy and paste into both `.zshrc.tmpl` and `dot_bashrc.tmpl`.
-*   **What Goes Here:** The `nvm-loader.sh` logic is the perfect example.
-*   **The Golden Rule:** If you write it twice, make it a template and `{{ include "..." }}` it.
-
-### At-a-Glance Summary Table
-
-This table summarizes the relationship and priorities:
-
-| File | Priority | Responsibility | Key Action |
-| :--- | :--- | :--- | :--- |
-| **`dot_profile.tmpl`** | 1 (Foundation) | **Environment Variables** (`PATH`, etc.) | Defines the environment for all shells. |
-| **`dot_zshrc.tmpl`** | 2 (Interactive) | **Interactive Zsh Experience** | **Sources `.profile`**, then loads aliases, functions, Zsh-specific tools. |
-| **`dot_bashrc.tmpl`** | 2 (Interactive) | **Interactive Bash Experience** | **Sources `.profile`**, then loads aliases, functions, Bash-specific tools. |
-| **`.chezmoitemplate.*`** | 3 (Reusable Code)| **Shared Logic** | Is `include`d by the RC files to avoid duplication. |
-
-By strictly following this hierarchy—**Profile sets the stage, RC files build the interactive scene on top of it**—you ensure that the shell environment is consistent, predictable, and robust across every node in the cluster.
-
-### The Core Concept: Abstracting Differences
-
-Instead of writing separate files for each machine, you create **one** master template for each dotfile (e.g., `dot_profile.tmpl`). Inside this template, you define variables that represent the *roles* or *capabilities* of your nodes, rather than hardcoding their hostnames everywhere.
-
-This approach is centered around the `chezmoi` configuration file, which can itself be a template: `~/.config/chezmoi/chezmoi.toml`.
-
-### Step 1: Define Your Node Roles and Capabilities
-
-The first step is to create a central place to define the "personality" of each node. This is done in a template that will *generate* your `chezmoi.toml` file.
-
-In your `omni-config` directory, you will have a file named `dot_config/chezmoi/chezmoi.toml.tmpl`. This file is special; `chezmoi` uses it to configure itself.
-
-**File: `omni-config/dot_config/chezmoi/chezmoi.toml.tmpl`**
-```toml
-# This file is a template that generates the final chezmoi.toml configuration.
-# It defines custom variables that all other templates can access.
-
-[data]
-    # Use the built-in .chezmoi.hostname variable to assign roles and capabilities.
-    {{ if eq .chezmoi.hostname "crtr" -}}
-    node_role = "gateway"
-    has_gpu = false
-    os_type = "linux"
-
-    {{ else if eq .chezmoi.hostname "prtr" -}}
-    node_role = "compute"
-    has_gpu = true
-    os_type = "linux"
-
-    {{ else if eq .chezmoi.hostname "drtr" -}}
-    node_role = "director"
-    has_gpu = true
-    os_type = "linux"
-
-    {{ else -}}
-    # A sensible default for any other machine you might add
-    node_role = "workstation"
-    has_gpu = false
-    os_type = "linux"
-    {{ end -}}
-```
-**How it works:**
-*   When you run `chezmoi apply` on `prtr`, `chezmoi` processes this template first.
-*   It sees `{{ if eq .chezmoi.hostname "prtr" }}` is true and generates a `~/.config/chezmoi/chezmoi.toml` file containing `node_role = "compute"` and `has_gpu = true`.
-*   These variables (`.node_role` and `.has_gpu`) are now available for all other templates to use during that same `chezmoi apply` run.
-
-### Step 2: Use the Custom Variables in Your Dotfile Templates
-
-Now that you have defined these roles and capabilities, your main dotfile templates become much cleaner and more readable. You are no longer checking for specific hostnames but for abstract capabilities.
-
-**Example in `dot_profile.tmpl`:**
-```go-template
-# --- GPU-specific PATH additions ---
-{{ if .has_gpu -}}
-# Add NVIDIA CUDA toolkit to PATH only on nodes with a GPU
-path_prepend "/usr/local/cuda/bin"
-{{ end -}}
-```
-This is much cleaner than `{{ if or (eq .chezmoi.hostname "prtr") (eq .chezmoi.hostname "drtr") }}`.
-
-**Example in `dot_zshrc.tmpl`:**
-```go-template
-# --- Role-specific aliases ---
-
-{{ if eq .node_role "gateway" -}}
-# Aliases for the gateway node (crtr)
-alias restart-dns='sudo systemctl restart pi-hole'
-alias restart-proxy='sudo systemctl restart caddy'
-
-{{ else if eq .node_role "compute" -}}
-# Aliases for the compute node (prtr)
-alias check-gpus='nvidia-smi'
-alias start-training='run-ml-training-job'
-
-{{ end -}}
-```
-
-### Step 3: The Result - A Unified Yet Flexible System
-
-By using this method:
-
-*   **Your `omni-config` remains unified:** You still have only one `dot_profile.tmpl` and one `dot_zshrc.tmpl`.
-*   **Configuration is abstract and readable:** Your templates check for capabilities (`if .has_gpu`) and roles (`if eq .node_role "gateway"`), not for hardcoded hostnames. This makes the purpose of each configuration block much clearer.
-*   **Extensibility is simple:** To add a new "compute" node named `prtr2`, you only need to add one line to `chezmoi.toml.tmpl`:
-    ```toml
-    {{ else if or (eq .chezmoi.hostname "prtr") (eq .chezmoi.hostname "prtr2") -}}
-    node_role = "compute"
-    has_gpu = true
-    ```
-    All the GPU-specific aliases and `$PATH` modifications will be applied to it automatically, without you having to touch any other file.
-
-This custom variable approach is the most professional and scalable way to manage a diverse set of machines from a single, clean configuration repository, and it is the ideal method for your Co-lab cluster.
-
-## WORKFLOW & RELEASE RULES
-
-1.  Create feature branches for new development.
-2.  Test changes thoroughly before merging.
-3.  Write clear and descriptive commit messages.
-4.  Use pull requests for code review.
-5.  All dangerous Ansible playbooks (e.g., `uid-standardization.yml`, `tool-standardization.yml`, `system-update.yml`) must be deleted immediately.
-6. The project is currently operating in the 'backup' branch until key issues are resolved.
-7.  `@AI-AGENT-DEPLOYMENT-GUIDE.md` should be deleted immediately.
-8.  `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be renamed to `COLAB-CLUSTER-ARCHITECTURE.md`.
-9. A new `/home/snitcher/Projects/colab-config/documentation/architecture/@README.md` should be created that contains a simple index.
-10. Only changes to the current branch (backup) of the colab-config repo are permitted until further notice.
-11. Acquire objective knowledge when assumptions could cause issues.
-12. Don't loose sight of big-picture goals when approaching tasks or sub-tasks.
-13. The `omni-config/INSTALL.md` file must be deleted.
-14. The  `archive` directory should be renamed to `.archive` and added to the `.gitignore`.
-15. The `.cursor/` and `.specstory/` directories must be added to the `.gitignore` file.
-16. ~~The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.~~
-17. Obsolete files should be moved to the `.archive/` directory.
-18. Automation is key, avoiding manual interventions. The tool (chezmoi) is designed to handle template rendering and distribution seamlessly, eliminating the need for manual file manipulation. The correct chezmoi workflow should be:
-    - `dot_profile.tmpl` gets rendered by chezmoi into `~/.profile` on each target node
-19. The following ZSH symlinks must be removed:
-    - `~/.zshenv`
-    - `~/.zprofile`
-    - `~/.zlogout`
-20. Anything that you would `rm`, `delete` or otherwise erase should instead be moved to the `.archive/` directory and included in the `.archive/README.md`
-21. The following files from `/cluster-nas/configs/zsh/` must be moved to `.archive/configuration-overlaps/zsh-system-files/`:
-    - `zshenv`
-    - `zprofile`
-    - `zlogout`
-22. The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.
-
-## CODING STANDARDS
-
-1.  Adhere to best practices for Ansible and Chezmoi.
-2.  Write idempotent Ansible playbooks.
-3.  Use templates for configuration files.
-4.  Document all code and configurations.
-5.  All `README.md` files must include a standardized file location header at the top of the file. The format must be:
-
-```
-**📍 File Location**: `path/to/file/README.md`
-
----
-```
-
-## DEBUGGING
-
-1.  Test configuration changes on the `director` node first.
-2.  Validate changes using appropriate testing commands.
-3.  Check system logs for errors.
-4.  Use `chezmoi diff` to preview changes before applying.
-
-## PROJECT DOCUMENTATION & CONTEXT SYSTEM
-
-### Key Documents:
-
--   `README.md`: Project overview and quick start guide.
--   `documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md`: System architecture and design decisions.
--   `AI-AGENT-QUICKSTART.md`: Quick start guide for AI agents on snitcher.
--   `CLAUDE.md`: Repository guidelines for Claude.
-
-### AI Agent Integration
-
--   **20-minute Assessment**: Use updated `AI-AGENT-QUICKSTART.md
+*   **What Goes Here:** Aliases, shell functions, prompt setup (`starship init`), and loading interactive

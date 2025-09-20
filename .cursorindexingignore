@@ -1,3 +1,11 @@
-
 # Don't index SpecStory auto-save files, but allow explicit context inclusion via @ references
-.specstory/**
+.specstory/
+# Archive directory (moved/deleted files)
+.archive/
+# Large binary files that shouldn't be indexed for performance
+containerization/**/*.tar
+*.tar.gz
+*.zip
+# Database files (binary, not useful for indexing)
+*.db
+*.sqlite

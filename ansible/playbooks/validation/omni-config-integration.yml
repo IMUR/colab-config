@@ -1,0 +1,299 @@
+---
+# Omni-Config Integration and Validation
+# Purpose: Prepare systems for chezmoi deployment and validate configurations
+# Scope: Bridge between system-level (ansible) and user-level (chezmoi) domains
+
+- name: Prepare System for Omni-Config Deployment
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    omniconfig_repo: "https://github.com/IMUR/colab-config.git"
+    validation_scripts_path: "/cluster-nas/colab/colab-config/scripts"
+
+  tasks:
+    # ====================================================================
+    # CHEZMOI INSTALLATION AND SETUP
+    # ====================================================================
+
+    - name: Check if chezmoi is installed
+      command: which chezmoi
+      register: chezmoi_installed
+      failed_when: false
+      changed_when: false
+
+    - name: Install chezmoi for user configuration management
+      shell: |
+        sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin
+      become_user: "{{ ansible_user }}"
+      when: chezmoi_installed.rc != 0
+
+    - name: Ensure ~/.local/bin is in PATH for session
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: 'export PATH="$HOME/.local/bin:$PATH"'
+        create: yes
+      become_user: "{{ ansible_user }}"
+
+    - name: Verify chezmoi installation
+      command: ~/.local/bin/chezmoi --version
+      register: chezmoi_version
+      become_user: "{{ ansible_user }}"
+      changed_when: false
+
+    - name: Report chezmoi installation
+      debug:
+        msg: "Chezmoi installed: {{ chezmoi_version.stdout }}"
+
+    # ====================================================================
+    # SYSTEM READINESS FOR USER CONFIGURATIONS
+    # ====================================================================
+
+    - name: Create required directories for user configurations
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      loop:
+        - "{{ ansible_env.HOME }}/.config"
+        - "{{ ansible_env.HOME }}/.local/bin"
+        - "{{ ansible_env.HOME }}/.local/state"
+
+    - name: Ensure proper permissions for user home directory
+      file:
+        path: "{{ ansible_env.HOME }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Install system dependencies for modern shell experience
+      apt:
+        name:
+          - curl                # Required for tool installations
+          - git                 # Version control
+          - vim                 # Text editor
+          - tmux                # Terminal multiplexer
+          - htop                # Process monitor
+          - tree                # Directory listing
+          - rsync               # File synchronization
+          - openssh-client      # SSH client
+        state: present
+
+    # ====================================================================
+    # VALIDATION SCRIPTS INTEGRATION
+    # ====================================================================
+
+    - name: Create validation scripts directory
+      file:
+        path: /usr/local/share/cluster-validation
+        state: directory
+        mode: "0755"
+
+    - name: Install validation scripts system-wide
+      copy:
+        src: "{{ validation_scripts_path }}/{{ item }}"
+        dest: "/usr/local/share/cluster-validation/{{ item }}"
+        mode: "0755"
+        remote_src: yes
+      loop:
+        - validate-omniconfig.sh
+        - validate-omniconfig-changes.sh
+      when: validation_scripts_path is defined
+
+    - name: Create validation wrapper script
+      copy:
+        dest: /usr/local/bin/cluster-validate
+        content: |
+          #!/bin/bash
+          # Cluster Configuration Validation Wrapper
+          # Routes to appropriate validation based on arguments
+
+          SCRIPT_DIR="/usr/local/share/cluster-validation"
+          SCRIPTS_NFS="/cluster-nas/colab/colab-config/scripts"
+
+          usage() {
+              echo "Usage: cluster-validate [standard|changes|help]"
+              echo
+              echo "Commands:"
+              echo "  standard  - Full omni-config validation"
+              echo "  changes   - Change-aware validation since last update"
+              echo "  help      - Show this help message"
+              echo
+              echo "Examples:"
+              echo "  cluster-validate standard"
+              echo "  cluster-validate changes --since HEAD~5"
+          }
+
+          case "${1:-standard}" in
+              standard)
+                  if [[ -f "$SCRIPTS_NFS/validate-omniconfig.sh" ]]; then
+                      bash "$SCRIPTS_NFS/validate-omniconfig.sh" "${@:2}"
+                  elif [[ -f "$SCRIPT_DIR/validate-omniconfig.sh" ]]; then
+                      bash "$SCRIPT_DIR/validate-omniconfig.sh" "${@:2}"
+                  else
+                      echo "Error: Validation script not found"
+                      exit 1
+                  fi
+                  ;;
+              changes)
+                  if [[ -f "$SCRIPTS_NFS/validate-omniconfig-changes.sh" ]]; then
+                      bash "$SCRIPTS_NFS/validate-omniconfig-changes.sh" "${@:2}"
+                  elif [[ -f "$SCRIPT_DIR/validate-omniconfig-changes.sh" ]]; then
+                      bash "$SCRIPT_DIR/validate-omniconfig-changes.sh" "${@:2}"
+                  else
+                      echo "Error: Change validation script not found"
+                      exit 1
+                  fi
+                  ;;
+              help|--help|-h)
+                  usage
+                  ;;
+              *)
+                  echo "Unknown command: $1"
+                  usage
+                  exit 1
+                  ;;
+          esac
+        mode: "0755"
+
+    # ====================================================================
+    # DEPLOYMENT READINESS CHECK
+    # ====================================================================
+
+    - name: Check NFS availability for script access
+      stat:
+        path: "{{ validation_scripts_path }}"
+      register: nfs_scripts_available
+
+    - name: Test validation script accessibility
+      command: cluster-validate help
+      register: validation_test
+      failed_when: false
+      changed_when: false
+
+    - name: Report system readiness for omni-config
+      debug:
+        msg: |
+          === Omni-Config Deployment Readiness ===
+          Chezmoi installed: {{ 'Yes' if chezmoi_installed.rc != 0 else 'Already present' }}
+          Validation scripts: {{ 'Available via NFS' if nfs_scripts_available.stat.exists else 'Local copies only' }}
+          System dependencies: Installed
+          User directories: Prepared
+          Ready for: chezmoi init --apply {{ omniconfig_repo }}
+
+# ========================================================================
+# POST-DEPLOYMENT VALIDATION
+# ========================================================================
+
+- name: Validate Omni-Config Deployment
+  hosts: all
+  become: no
+  gather_facts: yes
+
+  tasks:
+    - name: Check if omni-config files are managed by chezmoi
+      command: ~/.local/bin/chezmoi managed
+      register: managed_files
+      failed_when: false
+      changed_when: false
+
+    - name: Check for common omni-config files
+      stat:
+        path: "{{ item }}"
+      register: omniconfig_files
+      loop:
+        - "{{ ansible_env.HOME }}/.profile"
+        - "{{ ansible_env.HOME }}/.bashrc"
+        - "{{ ansible_env.HOME }}/.zshrc"
+        - "{{ ansible_env.HOME }}/.config/starship.toml"
+
+    - name: Test basic shell configuration loading
+      shell: |
+        source ~/.profile 2>/dev/null && echo "Profile: OK" || echo "Profile: Error"
+        source ~/.bashrc 2>/dev/null && echo "Bashrc: OK" || echo "Bashrc: Error"
+      register: shell_test
+      changed_when: false
+
+    - name: Run comprehensive validation if scripts available
+      command: cluster-validate standard
+      register: full_validation
+      failed_when: false
+      changed_when: false
+
+    - name: Deployment validation report
+      debug:
+        msg: |
+          === Omni-Config Deployment Status ===
+          Node: {{ inventory_hostname }}
+          Managed files: {{ managed_files.stdout_lines | length if managed_files.rc == 0 else 'Chezmoi not initialized' }}
+          Shell configs: {{ shell_test.stdout_lines | join(', ') }}
+          {% if full_validation.rc == 0 %}
+          Full validation: PASSED
+          {% elif full_validation.rc == 1 %}
+          Full validation: PARTIAL (warnings)
+          {% else %}
+          Full validation: FAILED or not available
+          {% endif %}
+
+# ========================================================================
+# CLUSTER-WIDE DEPLOYMENT ORCHESTRATION
+# ========================================================================
+
+- name: Orchestrate Omni-Config Deployment Across Cluster
+  hosts: localhost
+  become: no
+  gather_facts: no
+
+  vars:
+    omniconfig_repo: "https://github.com/IMUR/colab-config.git"
+
+  tasks:
+    - name: Deploy omni-config to all nodes
+      command: >
+        ssh {{ item }}
+        'if ! ~/.local/bin/chezmoi managed | grep -q profile; then
+           ~/.local/bin/chezmoi init --apply {{ omniconfig_repo }};
+         else
+           ~/.local/bin/chezmoi update;
+         fi'
+      register: deployment_results
+      loop:
+        - cooperator
+        - projector
+        - director
+      delegate_to: localhost
+
+    - name: Wait for deployment to complete
+      pause:
+        seconds: 5
+
+    - name: Run post-deployment validation on all nodes
+      command: ssh {{ item }} 'cluster-validate standard'
+      register: validation_results
+      failed_when: false
+      loop:
+        - cooperator
+        - projector
+        - director
+      delegate_to: localhost
+
+    - name: Cluster deployment summary
+      debug:
+        msg: |
+          === Cluster Omni-Config Deployment Summary ===
+          {% for result in deployment_results.results %}
+          {{ result.item }}: {{ 'Success' if result.rc == 0 else 'Failed' }}
+          {% endfor %}
+
+          Validation Results:
+          {% for result in validation_results.results %}
+          {{ result.item }}: {{ 'Passed' if result.rc == 0 else 'Issues detected' }}
+          {% endfor %}
+
+          Next Steps:
+          1. SSH to each node and test interactive shell
+          2. Run 'cluster-validate changes' to track future updates
+          3. Use 'chezmoi update' on nodes after repo changes

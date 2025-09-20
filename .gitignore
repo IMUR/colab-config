@@ -31,6 +31,7 @@ ansible/inventory/**/group_vars/**/vault.yml
 *.tmp
 .ansible/
 *.retry
+.archive/
 
 # System files
 .DS_Store
@@ -51,11 +52,11 @@ env/
 venv/
 .venv
 
-# Logs
+# Temporary log files ONLY (not project documentation in logs/)
 *.log
-logs/
 *.out
 *.err
+# The logs/ directory contains important project docs - DO NOT exclude it!
 
 # IDE
 .vscode/
@@ -81,16 +82,20 @@ private/
 .env.local
 .env.*.local
 
-# Service-specific sensitive configs
-services/**/config.json
-services/**/settings.json
-services/**/database.conf
-services/**/secrets.conf
+# Service-specific sensitive configs - BE SPECIFIC
+# Don't use broad patterns that might exclude legitimate configs
+services/**/*.secret
+services/**/*.password
+services/**/*.token
 
-# But keep example configs
+# Database files might contain sensitive data
+services/**/semaphore.db
+
+# But keep example configs and public keys
 !services/**/*.example
 !services/**/*.template
 !services/**/*.sample
+!services/**/*.pub
 
 # Temporary files
 *.wrapper
