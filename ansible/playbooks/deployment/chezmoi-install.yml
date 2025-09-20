@@ -1,0 +1,44 @@
+---
+# Install chezmoi binary on cluster nodes - user-level installation
+- name: Install Chezmoi
+  hosts: cluster_nodes # Excludes snitcher (has independent config)
+  become: no
+
+  tasks:
+    - name: Check if chezmoi already installed
+      stat:
+        path: "{{ ansible_env.HOME }}/.local/bin/chezmoi"
+      register: chezmoi_exists
+
+    - name: Create .local/bin directory
+      file:
+        path: "{{ ansible_env.HOME }}/.local/bin"
+        state: directory
+        mode: "0755"
+      when: not chezmoi_exists.stat.exists
+
+    - name: Install chezmoi binary
+      shell: |
+        curl -sfL https://get.chezmoi.io | sh -s -- -b {{ ansible_env.HOME }}/.local/bin
+      when: not chezmoi_exists.stat.exists
+
+    - name: Verify chezmoi installation
+      command: "{{ ansible_env.HOME }}/.local/bin/chezmoi --version"
+      register: chezmoi_version
+      changed_when: false
+
+    - name: Report installation status
+      debug:
+        msg: "{{ inventory_hostname }}: {{ chezmoi_version.stdout }}"
+
+    - name: Check PATH includes .local/bin
+      shell: echo "$PATH" | grep -q "\.local/bin"
+      register: path_check
+      changed_when: false
+      failed_when: false
+
+    - name: Note PATH configuration
+      debug:
+        msg: |
+          {{ inventory_hostname }}: .local/bin in PATH: {{ 'Yes' if path_check.rc == 0 else 'No - may need shell reload' }}
+      when: path_check is defined

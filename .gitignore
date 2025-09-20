@@ -63,6 +63,8 @@ logs/
 *.iml
 .project
 .settings/
+.cursor/
+.specstory/
 
 # Personal notes and drafts
 *-draft.*
@@ -94,3 +96,6 @@ services/**/secrets.conf
 *.wrapper
 temp/
 temporary/
+
+# Archive directory
+.archive/

@@ -1,0 +1,68 @@
+---
+# Basic cluster health monitoring - safe operations only
+- name: Cluster Health Check
+  hosts: all
+  gather_facts: yes
+  become: no
+
+  tasks:
+    - name: Check SSH connectivity
+      ping:
+
+    - name: Check disk space
+      shell: df -h / | tail -1
+      register: disk_usage
+      changed_when: false
+
+    - name: Check system load
+      shell: uptime
+      register: system_load
+      changed_when: false
+
+    - name: Check NFS mount
+      shell: mount | grep cluster-nas || echo "NFS not mounted"
+      register: nfs_status
+      changed_when: false
+      failed_when: false
+
+    - name: Check user configuration method
+      shell: |
+        if [[ -L ~/.zshrc ]]; then
+          echo "symlink to $(readlink ~/.zshrc)"
+        elif command -v chezmoi >/dev/null; then
+          echo "chezmoi available"
+        else
+          echo "local files"
+        fi
+      register: config_method
+      changed_when: false
+
+    - name: Report node status
+      debug:
+        msg: |
+          Node: {{ inventory_hostname }}
+          Disk: {{ disk_usage.stdout.split()[-2] }}
+          Load: {{ system_load.stdout.split()[-3:] | join(' ') }}
+          NFS: {{ 'Mounted' if 'cluster-nas' in nfs_status.stdout else 'Not mounted' }}
+          Config: {{ config_method.stdout }}
+
+    - name: Check critical services (cooperator only)
+      systemd:
+        name: "{{ item }}"
+      loop:
+        - ssh
+        - nfs-kernel-server
+        - caddy
+        - pihole-FTL
+      register: service_status
+      when: inventory_hostname == "cooperator"
+      ignore_errors: yes
+
+    - name: Report service status (cooperator)
+      debug:
+        msg: |
+          Services Status:
+          {% for result in service_status.results %}
+          - {{ result.item }}: {{ result.status.ActiveState | default('unknown') }}
+          {% endfor %}
+      when: inventory_hostname == "cooperator" and service_status is defined

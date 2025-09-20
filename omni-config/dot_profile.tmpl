@@ -1,0 +1,167 @@
+# Unified .profile for Co-lab Cluster - TEMPLATED VERSION
+# Single source of truth for PATH and environment variables
+# Works across all shells (bash, zsh, dash, sh) and SSH contexts
+# Template-time node identification ensures consistent deployment
+
+# ====================================================================
+# TEMPLATE-TIME ENVIRONMENT DETECTION
+# ====================================================================
+
+# Node identification (runtime detection)
+export NODE_ROLE="$(hostname)"
+export ARCH="$(uname -m)"
+export OS=$(uname -s)
+
+# Runtime capability detection moved to individual shells
+
+# ====================================================================
+# UNIFIED PATH CONFIGURATION
+# ====================================================================
+
+# Function to safely add to PATH (avoids duplicates)
+add_to_path() {
+    case ":${PATH}:" in
+        *:"$1":*)
+            # Already in PATH
+            ;;
+        *)
+            # Add to PATH, prepending for priority
+            export PATH="$1:$PATH"
+            ;;
+    esac
+}
+
+# Base system paths (should already be in PATH from /etc/profile)
+# /usr/local/bin:/usr/bin:/bin:/usr/games
+
+# User-specific paths (highest priority)
+[ -d "$HOME/.local/bin" ] && add_to_path "$HOME/.local/bin"
+[ -d "$HOME/bin" ] && add_to_path "$HOME/bin"
+
+# Development tools
+[ -d "$HOME/.cargo/bin" ] && add_to_path "$HOME/.cargo/bin"
+
+# NVM (Node Version Manager) environment variable
+# Note: NVM shell functions are loaded in shell RC files, not here
+if [ -d "$HOME/.nvm" ]; then
+    export NVM_DIR="$HOME/.nvm"
+    # Do not manually add Node to PATH - let NVM functions handle this
+fi
+
+# GPU-specific paths and environment (runtime detection)
+if [ -d "/usr/local/cuda/bin" ]; then
+    add_to_path "/usr/local/cuda/bin"
+    export CUDA_HOME="/usr/local/cuda"
+fi
+if [ -d "/usr/local/cuda/lib64" ]; then
+    export LD_LIBRARY_PATH="/usr/local/cuda/lib64${LD_LIBRARY_PATH:+":$LD_LIBRARY_PATH"}"
+fi
+
+# Architecture-specific tool paths (runtime detection)
+if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+    # ARM64-specific paths
+    [ -d "/opt/homebrew/bin" ] && add_to_path "/opt/homebrew/bin"
+fi
+
+# Snap packages
+[ -d "/snap/bin" ] && add_to_path "/snap/bin"
+
+# ====================================================================
+# TOOL AVAILABILITY DETECTION (UNIFIED)
+# ====================================================================
+
+# Function to check if command exists
+_has() { command -v "$1" >/dev/null 2>&1; }
+
+# Unified tool detection (handles Debian package naming)
+export HAS_EZA=$(_has eza && echo 1 || echo 0)
+export HAS_BAT=$(_has bat || _has batcat && echo 1 || echo 0)
+export HAS_FD=$(_has fd || _has fdfind && echo 1 || echo 0)
+export HAS_RG=$(_has rg && echo 1 || echo 0)
+export HAS_ZOXIDE=$(_has zoxide && echo 1 || echo 0)
+export HAS_FZF=$(_has fzf && echo 1 || echo 0)
+export HAS_NNN=$(_has nnn && echo 1 || echo 0)
+export HAS_DELTA=$(_has delta && echo 1 || echo 0)
+export HAS_DUST=$(_has dust && echo 1 || echo 0)
+export HAS_STARSHIP=$(_has starship && echo 1 || echo 0)
+export HAS_ATUIN=$(_has atuin && echo 1 || echo 0)
+export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
+
+# Development tools
+export HAS_DOCKER=$(_has docker && echo 1 || echo 0)
+export HAS_NVM=$([[ -d "$HOME/.nvm" ]] && echo 1 || echo 0)
+export HAS_CARGO=$(_has cargo && echo 1 || echo 0)
+export HAS_NPM=$(_has npm && echo 1 || echo 0)
+export HAS_ANSIBLE=$(_has ansible && echo 1 || echo 0)
+
+# ====================================================================
+# SHELL-AGNOSTIC ENVIRONMENT
+# ====================================================================
+
+# Default editor
+export EDITOR="${EDITOR:-vim}"
+export VISUAL="${VISUAL:-$EDITOR}"
+
+# Less configuration
+export LESS="-R"
+export LESSHISTFILE="-"
+
+# XDG Base Directory Specification
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+
+# ====================================================================
+# SHELL RC LOADING
+# ====================================================================
+
+# Load shell-specific RC files for ALL shells (interactive and non-interactive)
+# The RC files themselves now handle the interactive/non-interactive distinction
+if [ -n "$BASH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
+    # Running bash and bashrc exists - load it for aliases and additional configs
+    . "$HOME/.bashrc"
+fi
+
+# Note: ZSH automatically loads ~/.zshrc, no need to source it here
+
+# ====================================================================
+# SSH COMPATIBILITY
+# ====================================================================
+
+# This file is sourced by login shells, which includes:
+# - SSH with login shells: ssh user@host
+# - SSH with commands when using login shell
+# - Local terminal sessions
+
+# For SSH non-interactive commands, PATH should now be preserved
+# If issues persist, automation scripts should use:
+# ssh user@host 'source ~/.profile; command'
+
+# ====================================================================
+# CLUSTER-SPECIFIC CONFIGURATIONS
+# ====================================================================
+
+# Co-lab cluster shared storage
+export CLUSTER_NAS="{{ .cluster.nas_path }}"
+
+# Template-time node-specific configurations
+{{- if eq .hostname "cooperator" }}
+# Cooperator (Gateway) specific
+export COOPERATOR_SERVICES_PATH="/opt/cooperator/services"
+{{- end }}
+
+{{- if eq .hostname "projector" }}
+# Projector (Compute) specific
+export PROJECTOR_GPU_COUNT=4
+export PROJECTOR_MEMORY="128GB"
+{{- end }}
+
+{{- if eq .hostname "director" }}
+# Director (ML) specific
+export DIRECTOR_ML_MODELS_PATH="/opt/ml/models"
+export DIRECTOR_GPU_COUNT=1
+{{- end }}
+
+# ====================================================================
+# END OF TEMPLATED UNIFIED PROFILE
+# ====================================================================
