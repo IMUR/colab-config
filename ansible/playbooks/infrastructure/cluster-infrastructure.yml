@@ -1,0 +1,328 @@
+---
+# Cluster Infrastructure Management
+# Purpose: Core system-level infrastructure for Co-lab cluster
+# Scope: System services, networking, storage - NOT user configurations
+
+- name: Co-lab Cluster Infrastructure Setup
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    cluster_domain: "ism.la"
+    cluster_network: "192.168.254.0/24"
+    nfs_export_path: "/cluster-nas"
+    cluster_gid: 2000
+
+  tasks:
+    # ====================================================================
+    # SYSTEM PREPARATION
+    # ====================================================================
+
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install essential system packages
+      apt:
+        name:
+          - nfs-common          # NFS client for all nodes
+          - rsync               # File synchronization
+          - curl                # HTTP client
+          - wget                # Download utility
+          - unzip               # Archive handling
+          - ca-certificates     # SSL certificates
+          - gnupg               # GPG for package verification
+          - lsb-release         # Distribution info
+          - software-properties-common  # Repository management
+        state: present
+
+    # ====================================================================
+    # USER AND GROUP MANAGEMENT
+    # ====================================================================
+
+    - name: Create cluster group for shared access
+      group:
+        name: cluster
+        gid: "{{ cluster_gid }}"
+        state: present
+
+    - name: Add primary user to cluster group
+      user:
+        name: "{{ ansible_user }}"
+        groups: cluster
+        append: yes
+      when: ansible_user != "root"
+
+    # ====================================================================
+    # NFS INFRASTRUCTURE
+    # ====================================================================
+
+    - name: Install NFS server (cooperator only)
+      apt:
+        name:
+          - nfs-kernel-server
+          - nfs4-acl-tools
+        state: present
+      when: inventory_hostname == "cooperator"
+
+    - name: Create NFS export directory (cooperator only)
+      file:
+        path: "{{ nfs_export_path }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: cluster
+        mode: "0775"
+      when: inventory_hostname == "cooperator"
+
+    - name: Configure NFS exports (cooperator only)
+      lineinfile:
+        path: /etc/exports
+        line: "{{ nfs_export_path }} {{ cluster_network }}(rw,sync,no_subtree_check,no_root_squash)"
+        state: present
+        backup: yes
+      when: inventory_hostname == "cooperator"
+      notify: restart nfs-server
+
+    - name: Start and enable NFS server (cooperator only)
+      systemd:
+        name: nfs-kernel-server
+        state: started
+        enabled: yes
+      when: inventory_hostname == "cooperator"
+
+    - name: Create NFS mount point (client nodes)
+      file:
+        path: "{{ nfs_export_path }}"
+        state: directory
+        mode: "0755"
+      when: inventory_hostname != "cooperator"
+
+    - name: Mount NFS share (client nodes)
+      mount:
+        path: "{{ nfs_export_path }}"
+        src: "cooperator:{{ nfs_export_path }}"
+        fstype: nfs4
+        opts: "defaults,_netdev"
+        state: mounted
+      when: inventory_hostname != "cooperator"
+
+    # ====================================================================
+    # NETWORK CONFIGURATION
+    # ====================================================================
+
+    - name: Add cluster hosts to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item.ip }} {{ item.name }}"
+        state: present
+        backup: yes
+      loop:
+        - { ip: "192.168.254.10", name: "cooperator crtr" }
+        - { ip: "192.168.254.20", name: "projector prtr" }
+        - { ip: "192.168.254.30", name: "director drtr" }
+
+    # ====================================================================
+    # SSH CONFIGURATION
+    # ====================================================================
+
+    - name: Ensure SSH is running and enabled
+      systemd:
+        name: ssh
+        state: started
+        enabled: yes
+
+    - name: Configure SSH for cluster access
+      blockinfile:
+        path: /etc/ssh/sshd_config
+        block: |
+          # Co-lab cluster SSH configuration
+          AllowUsers {{ ansible_user }}
+          PermitRootLogin no
+          PasswordAuthentication yes
+          PubkeyAuthentication yes
+          X11Forwarding yes
+        marker: "# {mark} CLUSTER SSH CONFIG"
+        backup: yes
+      notify: restart ssh
+
+    # ====================================================================
+    # SYSTEM-WIDE ENVIRONMENT
+    # ====================================================================
+
+    - name: Create cluster environment profile
+      copy:
+        content: |
+          # Co-lab Cluster System Environment
+          # System-level configurations only - user configs managed by chezmoi
+
+          # Cluster identification for all users
+          export CLUSTER_NODE="$(hostname)"
+          export CLUSTER_DOMAIN="{{ cluster_domain }}"
+          export CLUSTER_ROLE="{{ inventory_hostname }}"
+
+          # Basic PATH enhancement for system users
+          export PATH="/usr/local/bin:$PATH"
+
+          # NFS availability check function
+          cluster_check() {
+              if mountpoint -q {{ nfs_export_path }}; then
+                  echo "✓ NFS mounted at {{ nfs_export_path }}"
+              else
+                  echo "✗ NFS not available"
+                  return 1
+              fi
+          }
+
+          # System-wide cluster aliases (minimal set)
+          alias cluster-status='cluster_check && df -h {{ nfs_export_path }}'
+          alias cluster-services='systemctl status ssh nfs-common'
+        dest: /etc/profile.d/00-cluster-environment.sh
+        mode: "0644"
+        backup: yes
+
+    # ====================================================================
+    # SERVICE VALIDATION
+    # ====================================================================
+
+    - name: Verify essential services are running
+      systemd:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - ssh
+
+    - name: Verify NFS server is running (cooperator only)
+      systemd:
+        name: nfs-kernel-server
+        state: started
+      when: inventory_hostname == "cooperator"
+
+    - name: Test NFS mount accessibility
+      command: ls {{ nfs_export_path }}
+      register: nfs_test
+      failed_when: false
+      changed_when: false
+
+    - name: Report NFS status
+      debug:
+        msg: |
+          NFS Status: {{ 'Available' if nfs_test.rc == 0 else 'Not accessible' }}
+          {% if nfs_test.rc != 0 %}
+          Error: {{ nfs_test.stderr | default('Unknown error') }}
+          {% endif %}
+
+  handlers:
+    - name: restart nfs-server
+      systemd:
+        name: nfs-kernel-server
+        state: restarted
+
+    - name: restart ssh
+      systemd:
+        name: ssh
+        state: restarted
+
+# ========================================================================
+# COOPERATOR-SPECIFIC SERVICES
+# ========================================================================
+
+- name: Configure Cooperator Gateway Services
+  hosts: cooperator
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Install gateway services
+      apt:
+        name:
+          - caddy              # Reverse proxy
+          - dnsutils           # DNS tools
+        state: present
+
+    - name: Create caddy configuration directory
+      file:
+        path: /etc/caddy
+        state: directory
+        mode: "0755"
+
+    - name: Basic caddy configuration
+      copy:
+        content: |
+          # Co-lab Cluster Gateway Configuration
+          # Basic reverse proxy setup
+
+          *.ism.la {
+              # Default response for unknown subdomains
+              respond "Co-lab Cluster Gateway" 200
+          }
+
+          ssh.ism.la {
+              # Web SSH terminal (if installed)
+              reverse_proxy localhost:4200
+          }
+
+          mng.ism.la {
+              # Cockpit management interface
+              reverse_proxy localhost:9090
+          }
+        dest: /etc/caddy/Caddyfile
+        mode: "0644"
+        backup: yes
+      notify: restart caddy
+
+    - name: Start and enable caddy
+      systemd:
+        name: caddy
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: restart caddy
+      systemd:
+        name: caddy
+        state: restarted
+
+# ========================================================================
+# POST-DEPLOYMENT VALIDATION
+# ========================================================================
+
+- name: Validate Infrastructure Deployment
+  hosts: all
+  become: no
+  gather_facts: yes
+
+  tasks:
+    - name: Check cluster connectivity
+      ping:
+
+    - name: Verify cluster group membership
+      command: groups {{ ansible_user }}
+      register: user_groups
+      changed_when: false
+
+    - name: Verify NFS accessibility
+      stat:
+        path: "{{ nfs_export_path }}"
+      register: nfs_check
+
+    - name: Test SSH connectivity to other nodes
+      command: ssh -o ConnectTimeout=5 -o BatchMode=yes {{ item }} echo "Connected to {{ item }}"
+      register: ssh_test
+      failed_when: false
+      changed_when: false
+      loop:
+        - cooperator
+        - projector
+        - director
+      when: item != inventory_hostname
+
+    - name: Infrastructure validation report
+      debug:
+        msg: |
+          === {{ inventory_hostname }} Infrastructure Status ===
+          User Groups: {{ user_groups.stdout }}
+          NFS Available: {{ 'Yes' if nfs_check.stat.exists else 'No' }}
+          SSH Connectivity: {{ ssh_test.results | map(attribute='rc') | list | join(', ') }}
+          Services: Ready for omni-config deployment

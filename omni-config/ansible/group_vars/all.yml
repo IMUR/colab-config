@@ -1,0 +1,171 @@
+---
+# User-Level Ansible Global Variables
+# Purpose: User environment configurations and preferences
+# Scope: User $HOME directory only - no system modifications
+
+# ====================================================================
+# USER IDENTITY AND ENVIRONMENT
+# ====================================================================
+
+# Git configuration
+git_user_name: "Co-lab User"
+git_user_email: "{{ ansible_user }}@{{ cluster_domain }}"
+git_default_branch: "main"
+git_editor: "vim"
+
+# SSH configuration
+ssh_config:
+  server_alive_interval: 60
+  tcp_keep_alive: yes
+  control_master: auto
+  control_persist: "10m"
+  control_path: "~/.ssh/master-%r@%h:%p"
+
+# Shell preferences
+default_shell: "/bin/bash"
+enable_zsh: true
+enable_starship_prompt: true
+
+# ====================================================================
+# DEVELOPMENT ENVIRONMENT
+# ====================================================================
+
+# Development workspace structure
+workspace_directories:
+  - "{{ development_workspace }}/projects"
+  - "{{ development_workspace }}/tools"
+  - "{{ development_workspace }}/scripts"
+  - "{{ development_workspace }}/experiments"
+  - "{{ development_workspace }}/docs"
+
+# Development tools configuration
+development_tools:
+  nodejs:
+    enable_nvm: true
+    default_version: "lts"
+  python:
+    enable_venv: true
+    default_version: "3.11"
+  rust:
+    enable_cargo: true
+  docker:
+    enable_user_access: true
+
+# ====================================================================
+# MODERN CLI TOOLS PREFERENCES
+# ====================================================================
+
+# Tool configurations (user-level settings)
+cli_tools:
+  eza:
+    enable_aliases: true
+    default_options: "--color=auto --group-directories-first"
+  bat:
+    enable_aliases: true
+    theme: "Dracula"
+  fzf:
+    enable_key_bindings: true
+    enable_completions: true
+  zoxide:
+    enable_aliases: true
+    alias_name: "z"
+  starship:
+    enable: true
+    config_preset: "nerd-font-symbols"
+
+# ====================================================================
+# CLUSTER-SPECIFIC USER CONFIGURATIONS
+# ====================================================================
+
+# Cluster node aliases
+cluster_aliases:
+  cooperator: "crtr"
+  projector: "prtr"
+  director: "drtr"
+
+# NFS and shared storage
+shared_storage:
+  cluster_nas: "/cluster-nas"
+  user_shared: "/cluster-nas/users/{{ ansible_user }}"
+  project_shared: "/cluster-nas/projects"
+
+# Node-specific user configurations
+node_specific_configs:
+  cooperator:
+    user_services:
+      - "web_development"
+      - "cluster_management"
+    development_focus:
+      - "frontend"
+      - "infrastructure"
+
+  projector:
+    user_services:
+      - "gpu_development"
+      - "container_development"
+    development_focus:
+      - "cuda"
+      - "docker"
+      - "high_performance"
+
+  director:
+    user_services:
+      - "jupyter"
+      - "ml_development"
+    development_focus:
+      - "machine_learning"
+      - "data_science"
+      - "research"
+
+# ====================================================================
+# SECURITY AND ACCESS
+# ====================================================================
+
+# SSH key management (user-level)
+ssh_key_management:
+  generate_keys: false  # Only if user requests
+  key_type: "ed25519"
+  key_comment: "{{ ansible_user }}@{{ cluster_domain }}"
+
+# User-level security preferences
+security_preferences:
+  enable_ssh_agent: true
+  enable_gpg_agent: true
+  auto_lock_timeout: 900  # 15 minutes
+
+# ====================================================================
+# PERSONALIZATION
+# ====================================================================
+
+# User preferences (customizable)
+user_preferences:
+  timezone: "UTC"
+  locale: "en_US.UTF-8"
+  editor: "vim"
+  pager: "less"
+  browser: "firefox"
+
+# Theme and appearance
+appearance:
+  terminal_theme: "dark"
+  color_scheme: "dracula"
+  font_family: "JetBrains Mono"
+  enable_nerd_fonts: true
+
+# ====================================================================
+# VALIDATION AND HEALTH
+# ====================================================================
+
+# User-level validation settings
+validation:
+  check_shell_configs: true
+  check_tool_integrations: true
+  check_development_environment: true
+  check_cluster_connectivity: true
+  generate_reports: true
+
+# Health monitoring (user perspective)
+health_monitoring:
+  enable_user_health_checks: true
+  check_interval: "daily"
+  report_location: "{{ user_home }}/.local/share/health-reports"

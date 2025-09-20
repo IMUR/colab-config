@@ -135,43 +135,55 @@
       loop: "{{ tool_verification.results }}"
 
     # ====================================================================
-    # CONFIGURATION FILES
+    # SYSTEM INTEGRATION (NO USER CONFIGS)
     # ====================================================================
 
-    - name: Ensure starship config directory exists
-      file:
-        path: "{{ ansible_env.HOME }}/.config"
-        state: directory
+    - name: Create tools availability script for system use
+      copy:
+        dest: /usr/local/bin/cluster-tools-check
+        content: |
+          #!/bin/bash
+          # Co-lab Cluster Tools Availability Check
+          # System-level tool validation script
+
+          echo "=== Modern CLI Tools Status ==="
+          for tool in eza bat batcat fd fdfind rg fzf nnn delta zoxide dust starship atuin; do
+              if command -v "$tool" >/dev/null 2>&1; then
+                  version=$($tool --version 2>/dev/null | head -1 || echo "installed")
+                  echo "✓ $tool: $version"
+              else
+                  echo "✗ $tool: not found"
+              fi
+          done
+
+          echo
+          echo "=== Tool Detection Variables ==="
+          echo "# Copy these to your shell profile for tool detection:"
+          echo "export HAS_EZA=\$(command -v eza >/dev/null 2>&1 && echo 1 || echo 0)"
+          echo "export HAS_BAT=\$(command -v bat >/dev/null 2>&1 || command -v batcat >/dev/null 2>&1 && echo 1 || echo 0)"
+          echo "export HAS_FD=\$(command -v fd >/dev/null 2>&1 || command -v fdfind >/dev/null 2>&1 && echo 1 || echo 0)"
+          echo "export HAS_RG=\$(command -v rg >/dev/null 2>&1 && echo 1 || echo 0)"
+          echo "export HAS_FZF=\$(command -v fzf >/dev/null 2>&1 && echo 1 || echo 0)"
+          echo "export HAS_ZOXIDE=\$(command -v zoxide >/dev/null 2>&1 && echo 1 || echo 0)"
+          echo "export HAS_STARSHIP=\$(command -v starship >/dev/null 2>&1 && echo 1 || echo 0)"
         mode: "0755"
 
-    - name: Create basic starship configuration
-      copy:
-        dest: "{{ ansible_env.HOME }}/.config/starship.toml"
-        content: |
-          # Starship Configuration for Co-lab Cluster
-
-          [character]
-          success_symbol = "[➜](bold green)"
-          error_symbol = "[➜](bold red)"
-
-          [directory]
-          truncation_length = 3
-          truncate_to_repo = false
-
-          [git_branch]
-          symbol = "🌱 "
-
-          [nodejs]
-          symbol = "⬢ "
-
-          [rust]
-          symbol = "🦀 "
-
-          [python]
-          symbol = "🐍 "
-
-          [cmd_duration]
-          min_time = 500
-          format = "took [$duration](bold yellow)"
+    - name: Add tools to system profile (minimal detection only)
+      blockinfile:
+        path: /etc/profile.d/01-modern-tools.sh
+        create: yes
         mode: "0644"
-        backup: yes
+        block: |
+          # Modern CLI Tools System Integration
+          # Tool availability for system users - NO USER CONFIGURATIONS
+
+          # Add user-local tool paths to system PATH
+          if [ -d "$HOME/.local/bin" ]; then
+              export PATH="$HOME/.local/bin:$PATH"
+          fi
+
+          # System-wide tool availability check function
+          check_modern_tools() {
+              /usr/local/bin/cluster-tools-check
+          }
+        marker: "# {mark} MODERN TOOLS SYSTEM INTEGRATION"

@@ -1,0 +1,591 @@
+---
+# Node-Specific Service Management
+# Purpose: Configure services appropriate to each node's role in the cluster
+# Scope: System services only - user applications managed separately
+
+# ========================================================================
+# COOPERATOR (Gateway) SERVICES
+# ========================================================================
+
+- name: Configure Cooperator Gateway Services
+  hosts: cooperator
+  become: yes
+  gather_facts: yes
+
+  vars:
+    cluster_domain: "ism.la"
+    gateway_services:
+      - name: "ssh"
+        port: 22
+        purpose: "Remote access"
+      - name: "caddy"
+        port: 80,443
+        purpose: "Web gateway"
+      - name: "nfs-kernel-server"
+        port: 2049
+        purpose: "Network file sharing"
+
+  tasks:
+    # ====================================================================
+    # WEB GATEWAY (CADDY)
+    # ====================================================================
+
+    - name: Install caddy web server
+      apt:
+        name: caddy
+        state: present
+
+    - name: Create caddy configuration
+      copy:
+        dest: /etc/caddy/Caddyfile
+        content: |
+          # Co-lab Cluster Gateway Configuration
+          # Reverse proxy for cluster services
+
+          # Default response for the domain
+          {{ cluster_domain }} {
+              respond "Co-lab Cluster Gateway\nServices: ssh.{{ cluster_domain }}, mng.{{ cluster_domain }}"
+          }
+
+          # Web SSH terminal (if installed)
+          ssh.{{ cluster_domain }} {
+              # Webssh2 or similar web terminal
+              reverse_proxy localhost:4200
+              log {
+                  output file /var/log/caddy/ssh-terminal.log
+              }
+          }
+
+          # System management interface
+          mng.{{ cluster_domain }} {
+              # Cockpit system management
+              reverse_proxy localhost:9090 {
+                  transport http {
+                      tls_insecure_skip_verify
+                  }
+              }
+              log {
+                  output file /var/log/caddy/management.log
+              }
+          }
+
+          # Configuration management (if semaphore is installed)
+          cfg.{{ cluster_domain }} {
+              reverse_proxy localhost:3000
+              log {
+                  output file /var/log/caddy/config-mgmt.log
+              }
+          }
+
+          # DNS management (if pi-hole web interface is enabled)
+          dns.{{ cluster_domain }} {
+              reverse_proxy localhost:8080
+              log {
+                  output file /var/log/caddy/dns-mgmt.log
+              }
+          }
+        mode: "0644"
+        backup: yes
+      notify: restart caddy
+
+    - name: Create caddy log directory
+      file:
+        path: /var/log/caddy
+        state: directory
+        owner: caddy
+        group: caddy
+        mode: "0755"
+
+    - name: Start and enable caddy
+      systemd:
+        name: caddy
+        state: started
+        enabled: yes
+
+    # ====================================================================
+    # SYSTEM MANAGEMENT TOOLS
+    # ====================================================================
+
+    - name: Install system management tools
+      apt:
+        name:
+          - cockpit              # Web-based system management
+          - cockpit-machines     # VM management
+          - cockpit-networkmanager
+          - cockpit-storaged
+        state: present
+
+    - name: Start and enable cockpit
+      systemd:
+        name: cockpit.socket
+        state: started
+        enabled: yes
+
+    # ====================================================================
+    # DNS AND NETWORKING
+    # ====================================================================
+
+    - name: Install network management tools
+      apt:
+        name:
+          - dnsutils
+          - netcat-openbsd
+          - iptables-persistent
+        state: present
+
+    # ====================================================================
+    # SERVICE VALIDATION
+    # ====================================================================
+
+    - name: Verify cooperator services are running
+      systemd:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - ssh
+        - caddy
+        - nfs-kernel-server
+        - cockpit.socket
+
+    - name: Test service accessibility
+      uri:
+        url: "http://localhost:{{ item.port }}"
+        method: GET
+        status_code: [200, 301, 302, 404]  # Accept various responses
+      register: service_test
+      failed_when: false
+      loop:
+        - { name: "caddy", port: 80 }
+        - { name: "cockpit", port: 9090 }
+
+  handlers:
+    - name: restart caddy
+      systemd:
+        name: caddy
+        state: restarted
+
+# ========================================================================
+# PROJECTOR (Compute) SERVICES
+# ========================================================================
+
+- name: Configure Projector Compute Services
+  hosts: projector
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    # ====================================================================
+    # COMPUTE ENVIRONMENT PREPARATION
+    # ====================================================================
+
+    - name: Install compute dependencies
+      apt:
+        name:
+          - build-essential     # Compilation tools
+          - cmake               # Build system
+          - pkg-config          # Package configuration
+          - libssl-dev         # SSL development
+          - libffi-dev         # FFI development
+          - python3-dev        # Python development
+          - python3-pip        # Python package manager
+          - python3-venv       # Virtual environments
+        state: present
+
+    # ====================================================================
+    # CONTAINER RUNTIME (FUTURE DOCKER PREPARATION)
+    # ====================================================================
+
+    - name: Create docker preparation directory
+      file:
+        path: /opt/docker-prep
+        state: directory
+        mode: "0755"
+
+    - name: Create docker installation script (for future use)
+      copy:
+        dest: /opt/docker-prep/install-docker.sh
+        content: |
+          #!/bin/bash
+          # Docker installation script for projector node
+          # Run this manually when ready for containerization
+
+          # Add Docker's official GPG key
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+          # Add Docker repository
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+          # Install Docker
+          sudo apt update
+          sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+          # Add user to docker group
+          sudo usermod -aG docker $USER
+
+          # Start and enable Docker
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+          echo "Docker installed. Please log out and back in for group changes to take effect."
+        mode: "0755"
+
+    # ====================================================================
+    # GPU PREPARATION (FOR FUTURE NVIDIA DRIVER INSTALLATION)
+    # ====================================================================
+
+    - name: Create GPU preparation directory
+      file:
+        path: /opt/gpu-prep
+        state: directory
+        mode: "0755"
+
+    - name: Create GPU driver installation script (for future use)
+      copy:
+        dest: /opt/gpu-prep/install-nvidia-drivers.sh
+        content: |
+          #!/bin/bash
+          # NVIDIA driver installation script for projector node
+          # Run this manually when GPU is installed
+
+          # Update package database
+          sudo apt update
+
+          # Install NVIDIA driver and CUDA toolkit
+          sudo apt install -y nvidia-driver-525 nvidia-cuda-toolkit
+
+          # Install Docker GPU support
+          if command -v docker >/dev/null 2>&1; then
+              # Add NVIDIA Docker repository
+              curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+              echo "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/ubuntu18.04/amd64 /" | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+              sudo apt update
+              sudo apt install -y nvidia-container-toolkit
+              sudo nvidia-ctk runtime configure --runtime=docker
+              sudo systemctl restart docker
+          fi
+
+          echo "NVIDIA drivers installed. Please reboot the system."
+          echo "After reboot, test with: nvidia-smi"
+        mode: "0755"
+
+    # ====================================================================
+    # MONITORING AND RESOURCE MANAGEMENT
+    # ====================================================================
+
+    - name: Install system monitoring tools
+      apt:
+        name:
+          - htop
+          - iotop
+          - nethogs
+          - ncdu
+        state: present
+
+    - name: Create resource monitoring script
+      copy:
+        dest: /usr/local/bin/projector-status
+        content: |
+          #!/bin/bash
+          # Projector node status and resource monitoring
+
+          echo "=== Projector Node Status ==="
+          echo "Date: $(date)"
+          echo "Uptime: $(uptime)"
+          echo
+
+          echo "=== Resource Usage ==="
+          echo "Memory:"
+          free -h
+          echo
+          echo "Disk:"
+          df -h /
+          echo
+          echo "CPU:"
+          lscpu | grep -E "(Model name|CPU\(s\)|Thread|Core)"
+          echo
+
+          echo "=== Network ==="
+          ip addr show | grep -E "(inet |UP|DOWN)"
+          echo
+
+          echo "=== GPU Status ==="
+          if command -v nvidia-smi >/dev/null 2>&1; then
+              nvidia-smi --query-gpu=name,temperature.gpu,utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits
+          else
+              echo "No NVIDIA GPU detected or drivers not installed"
+              echo "Run /opt/gpu-prep/install-nvidia-drivers.sh to install GPU support"
+          fi
+          echo
+
+          echo "=== Container Runtime ==="
+          if command -v docker >/dev/null 2>&1; then
+              echo "Docker version: $(docker --version)"
+              echo "Running containers: $(docker ps --format 'table {{.Names}}\t{{.Status}}' 2>/dev/null || echo 'None')"
+          else
+              echo "Docker not installed"
+              echo "Run /opt/docker-prep/install-docker.sh to install Docker"
+          fi
+        mode: "0755"
+
+# ========================================================================
+# DIRECTOR (ML Platform) SERVICES
+# ========================================================================
+
+- name: Configure Director ML Services
+  hosts: director
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    # ====================================================================
+    # MACHINE LEARNING DEPENDENCIES
+    # ====================================================================
+
+    - name: Install ML development dependencies
+      apt:
+        name:
+          - python3-dev
+          - python3-pip
+          - python3-venv
+          - python3-setuptools
+          - build-essential
+          - libblas-dev
+          - liblapack-dev
+          - libhdf5-dev
+          - pkg-config
+        state: present
+
+    # ====================================================================
+    # JUPYTER PREPARATION
+    # ====================================================================
+
+    - name: Create jupyter preparation directory
+      file:
+        path: /opt/jupyter-prep
+        state: directory
+        mode: "0755"
+
+    - name: Create Jupyter installation script (for future use)
+      copy:
+        dest: /opt/jupyter-prep/install-jupyter.sh
+        content: |
+          #!/bin/bash
+          # Jupyter Lab installation script for director node
+
+          # Create virtual environment for Jupyter
+          python3 -m venv /opt/jupyter-env
+          source /opt/jupyter-env/bin/activate
+
+          # Install Jupyter and common ML packages
+          pip install --upgrade pip
+          pip install jupyterlab
+          pip install numpy pandas matplotlib seaborn
+          pip install scikit-learn scipy
+          pip install plotly bokeh
+
+          # Install Jupyter extensions
+          pip install jupyter-widgets ipywidgets
+          pip install jupyterlab-git
+
+          # Create systemd service for Jupyter
+          sudo tee /etc/systemd/system/jupyter.service << EOF
+          [Unit]
+          Description=Jupyter Lab
+          After=network.target
+
+          [Service]
+          Type=simple
+          User={{ ansible_user }}
+          WorkingDirectory={{ ansible_env.HOME }}
+          ExecStart=/opt/jupyter-env/bin/jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable jupyter
+
+          echo "Jupyter Lab prepared. Start with: sudo systemctl start jupyter"
+          echo "Access at: http://director:8888"
+        mode: "0755"
+
+    # ====================================================================
+    # GPU PREPARATION (SINGLE GPU SETUP)
+    # ====================================================================
+
+    - name: Create GPU preparation directory
+      file:
+        path: /opt/gpu-prep
+        state: directory
+        mode: "0755"
+
+    - name: Create GPU driver installation script (for future use)
+      copy:
+        dest: /opt/gpu-prep/install-nvidia-drivers.sh
+        content: |
+          #!/bin/bash
+          # NVIDIA driver installation script for director node (single GPU)
+
+          # Update package database
+          sudo apt update
+
+          # Install NVIDIA driver
+          sudo apt install -y nvidia-driver-525
+
+          # Install CUDA toolkit for ML workloads
+          sudo apt install -y nvidia-cuda-toolkit
+
+          # Install cuDNN (for deep learning)
+          echo "Note: cuDNN requires manual download from NVIDIA developer site"
+          echo "Download and install cuDNN from: https://developer.nvidia.com/cudnn"
+
+          echo "NVIDIA drivers installed. Please reboot the system."
+          echo "After reboot, test with: nvidia-smi"
+        mode: "0755"
+
+    # ====================================================================
+    # ML WORKSPACE PREPARATION
+    # ====================================================================
+
+    - name: Create ML workspace directory
+      file:
+        path: "{{ ansible_env.HOME }}/ml-workspace"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Create ML environment setup script
+      copy:
+        dest: "{{ ansible_env.HOME }}/ml-workspace/setup-ml-env.sh"
+        content: |
+          #!/bin/bash
+          # ML environment setup for director node
+
+          echo "Setting up ML development environment..."
+
+          # Create virtual environment
+          python3 -m venv ~/ml-workspace/ml-env
+          source ~/ml-workspace/ml-env/bin/activate
+
+          # Install core ML packages
+          pip install --upgrade pip
+          pip install numpy pandas matplotlib seaborn
+          pip install scikit-learn scipy
+          pip install jupyter notebook
+
+          # Install deep learning frameworks (CPU versions initially)
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install tensorflow
+
+          echo "ML environment created at ~/ml-workspace/ml-env"
+          echo "Activate with: source ~/ml-workspace/ml-env/bin/activate"
+        mode: "0755"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    # ====================================================================
+    # MONITORING AND STATUS
+    # ====================================================================
+
+    - name: Create director status script
+      copy:
+        dest: /usr/local/bin/director-status
+        content: |
+          #!/bin/bash
+          # Director node status and ML environment monitoring
+
+          echo "=== Director Node Status ==="
+          echo "Date: $(date)"
+          echo "Uptime: $(uptime)"
+          echo
+
+          echo "=== Resource Usage ==="
+          echo "Memory:"
+          free -h
+          echo
+          echo "Disk:"
+          df -h /
+          echo
+
+          echo "=== GPU Status ==="
+          if command -v nvidia-smi >/dev/null 2>&1; then
+              nvidia-smi
+          else
+              echo "No NVIDIA GPU detected or drivers not installed"
+              echo "Run /opt/gpu-prep/install-nvidia-drivers.sh to install GPU support"
+          fi
+          echo
+
+          echo "=== ML Environment ==="
+          if [[ -d "{{ ansible_env.HOME }}/ml-workspace/ml-env" ]]; then
+              echo "ML environment: Ready"
+              echo "Activate: source ~/ml-workspace/ml-env/bin/activate"
+          else
+              echo "ML environment: Not setup"
+              echo "Setup: bash ~/ml-workspace/setup-ml-env.sh"
+          fi
+          echo
+
+          echo "=== Jupyter Status ==="
+          if systemctl is-active --quiet jupyter 2>/dev/null; then
+              echo "Jupyter Lab: Running"
+              echo "Access: http://director:8888"
+          else
+              echo "Jupyter Lab: Not running"
+              echo "Install: bash /opt/jupyter-prep/install-jupyter.sh"
+          fi
+        mode: "0755"
+
+# ========================================================================
+# CLUSTER SERVICE SUMMARY
+# ========================================================================
+
+- name: Generate Cluster Services Summary
+  hosts: localhost
+  become: no
+  gather_facts: no
+
+  tasks:
+    - name: Check service status across cluster
+      command: ssh {{ item.host }} "systemctl is-active {{ item.service }} 2>/dev/null || echo 'inactive'"
+      register: service_status
+      loop:
+        - { host: "cooperator", service: "caddy" }
+        - { host: "cooperator", service: "nfs-kernel-server" }
+        - { host: "cooperator", service: "cockpit.socket" }
+        - { host: "projector", service: "ssh" }
+        - { host: "director", service: "ssh" }
+      delegate_to: localhost
+      failed_when: false
+
+    - name: Cluster services summary
+      debug:
+        msg: |
+          === Co-lab Cluster Services Summary ===
+
+          COOPERATOR (Gateway):
+          - Caddy Web Gateway: {{ service_status.results[0].stdout }}
+          - NFS Server: {{ service_status.results[1].stdout }}
+          - Cockpit Management: {{ service_status.results[2].stdout }}
+          - Web Access: https://{{ cluster_domain | default('ism.la') }}
+
+          PROJECTOR (Compute):
+          - SSH Access: {{ service_status.results[3].stdout }}
+          - Docker: Ready for installation (/opt/docker-prep/)
+          - GPU Drivers: Ready for installation (/opt/gpu-prep/)
+          - Status: Run 'projector-status' on node
+
+          DIRECTOR (ML Platform):
+          - SSH Access: {{ service_status.results[4].stdout }}
+          - ML Environment: Ready for setup (~/ml-workspace/)
+          - Jupyter: Ready for installation (/opt/jupyter-prep/)
+          - Status: Run 'director-status' on node
+
+          Next Steps:
+          1. Install Docker on projector: ssh projector 'sudo /opt/docker-prep/install-docker.sh'
+          2. Setup ML environment on director: ssh director '~/ml-workspace/setup-ml-env.sh'
+          3. Install GPU drivers when hardware is available
