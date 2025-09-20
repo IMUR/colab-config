@@ -304,6 +304,12 @@ The current objective is a three-stage infrastructure reset:
 32. The AI should carry out intended actions directly so that each step can be validated.
 33. When reorganizing the project structure, use `git mv` instead of `mv` to preserve git history.
 34. During project reorganization, create symlinks for backward compatibility during the transition period.
+35. **Claude-Code Installation Strategy**: Implement a dual Node.js environment (system Node and NVM Node) to resolve dependency and path resolution conflicts. Refer to the "Claude-Code Installation Strategy for AI Agents" section in the CONFIGURATION MANAGEMENT section for detailed instructions.
+36. **Assess Before Acting**: Gather complete system state before changes
+37. **Preserve Working State**: Never break functioning components
+38. **Test Incrementally**: Verify each phase before proceeding
+39. **Document Decisions**: Record why specific approaches were chosen
+40. **Maintain Rollback Path**: Ensure every change can be undone
 
 ## CODING STANDARDS
 
@@ -642,9 +648,4 @@ Think of the shell startup as building layers, from the most fundamental environ
 *   **What Goes Here:** All `export` commands, especially `$PATH`, `$NVM_DIR`, and `$EDITOR`. It should also contain the `path_prepend` function.
 *   **The Golden Rule:** This file is the single source of truth for the environment. It must be POSIX-compliant (use `sh` syntax) so any shell can understand it.
 
-#### 2. **`dot_zshrc.tmpl` & `dot_bashrc.tmpl` are for the Interactive Experience**
-*   **Their Job:** Configure the **interactive** shell. This is everything that happens *after* the environment is set.
-*   **Their First Action:** They **MUST** source `~/.profile` at the very top. This is the critical step that guarantees a consistent environment, no matter how the shell was started.
-    *   In `.zshrc`: `emulate sh -c 'source ~/.profile'`
-    *   In `.bashrc`: `. ~/.profile`
-*   **What Goes Here:** Aliases, shell functions, prompt setup (`starship init`), and loading interactive
+#### 2. **`dot_zshrc.tmpl` & `dot_bashrc.tmpl` are for
