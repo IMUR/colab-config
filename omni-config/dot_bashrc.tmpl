@@ -208,8 +208,9 @@ if [ -f "$HOME/.cargo/env" ]; then
     . "$HOME/.cargo/env"
 fi
 
-# NVM (Node Version Manager) initialization
-if [[ $HAS_NVM == 1 ]]; then
+# Claude local installation PATH
+if [ -d "$HOME/.claude/local" ]; then
+    export PATH="$HOME/.claude/local:$PATH"
 fi
 
 # ====================================================================

@@ -41,11 +41,9 @@ add_to_path() {
 # Development tools
 [ -d "$HOME/.cargo/bin" ] && add_to_path "$HOME/.cargo/bin"
 
-# NVM (Node Version Manager) environment variable
-# Note: NVM shell functions are loaded in shell RC files, not here
-if [ -d "$HOME/.nvm" ]; then
-    export NVM_DIR="$HOME/.nvm"
-    # Do not manually add Node to PATH - let NVM functions handle this
+# Claude local installation PATH
+if [ -d "$HOME/.claude/local" ]; then
+    add_to_path "$HOME/.claude/local"
 fi
 
 # GPU-specific paths and environment (runtime detection)
@@ -89,7 +87,7 @@ export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
 
 # Development tools
 export HAS_DOCKER=$(_has docker && echo 1 || echo 0)
-export HAS_NVM=$([[ -d "$HOME/.nvm" ]] && echo 1 || echo 0)
+export HAS_CLAUDE_LOCAL=$([[ -d "$HOME/.claude/local" ]] && echo 1 || echo 0)
 export HAS_CARGO=$(_has cargo && echo 1 || echo 0)
 export HAS_NPM=$(_has npm && echo 1 || echo 0)
 export HAS_ANSIBLE=$(_has ansible && echo 1 || echo 0)
