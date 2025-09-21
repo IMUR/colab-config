@@ -38,9 +38,10 @@ colab-config/
 │   ├── validation/                 # Can add for organization
 │   ├── scripts/                    # Can add for organization
 │   └── README.md                   # Documentation
-├── 🎯 crtr-config/                    # Cooperator-specific configs
-├── 🎯 prtr-config/                    # Projector-specific configs
-├── 🎯 drtr-config/                    # Director-specific configs
+├── node-configs/                   # NEW directories for node-specific
+│   ├── crtr-config/
+│   ├── prtr-config/
+│   └── drtr-config/
 ├── 🛠️ system-ansible/                 # System-level configurations (Renamed from 'ansible/' for clarity)
 │   ├── playbooks/
 │   ├── inventory/
@@ -485,7 +486,6 @@ This comprehensive index covers all documentation in the Co-lab cluster configur
 - **`CLAUDE.md`** - Repository guidelines for AI agents (contains project rules and coding standards)
 - **`STAGE2-VALIDATION-CHECKLIST.md`** - Validation checklist for Stage 2 completion
 - **`STAGE2-VALIDATION-COMPLETE.md`** - Stage 2 completion confirmation
-- **`STAGE3-PROGRESS-REPORT.md`** - Complete Progress Report of Stage 3 GPU & Docker Implementation
 
 ### **Architecture Documentation**
 - **`documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md`** - Complete cluster architecture overview, node roles, network design, and hybrid configuration strategy

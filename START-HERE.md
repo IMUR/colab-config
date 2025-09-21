@@ -13,27 +13,37 @@ This document provides a **clear path** through the comprehensive infrastructure
 ### **📚 Complete Documentation Library**
 
 **🏗️ Architecture & Implementation:**
-- [NVIDIA/CUDA Implementation Strategy](documentation/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md) - Complete GPU stack deployment
-- [Docker Clean Reinstall Strategy](documentation/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md) - Docker optimization with Archon preservation
-- [Cluster Architecture Overview](documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md) - Overall system design
+
+- [NVIDIA/CUDA Implementation Strategy](docs/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md) - Complete GPU stack deployment
+- [Docker Clean Reinstall Strategy](docs/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md) - Docker optimization with Archon preservation
+- [Cluster Architecture Overview](docs/architecture/COLAB-CLUSTER-ARCHITECTURE.md) - Overall system design
 
 **📋 Procedures & Operations:**
-- [Complete Infrastructure Reset Sequence](documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md) - Master reset procedure
-- [Systemd Service Management Addendum](documentation/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md) - Critical service management
+
+- [Complete Infrastructure Reset Sequence](docs/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md) - Master reset procedure
+- [Systemd Service Management Addendum](docs/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md) - Critical service management
+
+**📏 Governance & Standards:**
+
+- [Strict Rules](docs/governance/STRICT-RULES.md) - Non-negotiable constraints
+- [Implementation Guides](docs/guides/) - How-to documentation
 
 **⚙️ Configuration Management:**
+
 - [Omni-Config Documentation](omni-config/README.md) - User environment and template system
 - [Main Repository Documentation](README.md) - Repository overview and quick start
+- [Machine-Readable Structure](trail.yaml) - Programmatic navigation
 
 ---
- 
 
 #### **Primary Documents:**
-1. 📖 **[Complete Infrastructure Reset Sequence - Phase 2](documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md#phase-2-complete-removal)**
-2. 📖 **[Systemd Service Management Addendum - Phases 1-3](documentation/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md#phase-1-pre-reset-service-documentation)**
-3. 📖 **[Docker Clean Reinstall Strategy - Phase 1](documentation/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md#phase-1-complete-archon-preservation)**
+
+1. 📖 **[Complete Infrastructure Reset Sequence - Phase 2](docs/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md#phase-2-complete-removal)**
+2. 📖 **[Systemd Service Management Addendum - Phases 1-3](docs/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md#phase-1-pre-reset-service-documentation)**
+3. 📖 **[Docker Clean Reinstall Strategy - Phase 1](docs/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md#phase-1-complete-archon-preservation)**
 
 #### **Key Activities:**
+
 ```bash
 # Critical Discovery: Archon runs as BOTH systemd service AND containers
 # Critical Discovery: Ollama runs as systemd service requiring preservation
@@ -63,6 +73,7 @@ This document provides a **clear path** through the comprehensive infrastructure
 ```
 
 #### **Expected Outcome:**
+
 - ✅ Clean system with no NVIDIA or Docker packages
 - ✅ 100% Archon application data preserved
 - ✅ All service configurations backed up
@@ -71,14 +82,17 @@ This document provides a **clear path** through the comprehensive infrastructure
 ---
 
 ### **Stage 2: Cluster-Wide Colab-Config Completion and Optimization** 🎯
+
 *Deploy unified configuration management across all nodes*
 
 #### **Primary Documents:**
+
 1. 📖 **[Complete Infrastructure Reset Sequence - Phase 3](documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md#phase-3-omni-config-deployment)**
 2. 📖 **[Omni-Config Documentation](omni-config/README.md)**
 3. 📖 **[Main Repository Quick Start](README.md#-quick-start-20-minutes)**
 
 #### **Key Activities:**
+
 ```bash
 # Deploy modern hybrid configuration management across cluster
 
@@ -104,6 +118,7 @@ This document provides a **clear path** through the comprehensive infrastructure
 ```
 
 #### **Expected Outcome:**
+
 - ✅ Unified configuration management across all nodes
 - ✅ Node-specific template rendering working
 - ✅ Clean, consistent shell environments
@@ -112,14 +127,17 @@ This document provides a **clear path** through the comprehensive infrastructure
 ---
 
 ### **Stage 3: Strategic Re-installation** 🚀
+
 *Install modern, unified software stack with GPU optimization*
 
 #### **Primary Documents:**
+
 1. 📖 **[Complete Infrastructure Reset Sequence - Phase 4](documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md#phase-4-optimal-reinstallation)**
 2. 📖 **[NVIDIA/CUDA Implementation Strategy - Phase 1.3](documentation/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md#13-modern-nvidia-stack-installation)**
 3. 📖 **[Docker Clean Reinstall Strategy - Phase 3](documentation/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md#phase-3-clean-docker-installation)**
 
 #### **Key Activities:**
+
 ```bash
 # Install modern, optimized software stack with template integration
 
@@ -149,6 +167,7 @@ This document provides a **clear path** through the comprehensive infrastructure
 ```
 
 #### **Expected Outcome:**
+
 - ✅ Modern NVIDIA drivers + CUDA 12.6+ with full toolkit
 - ✅ Clean Docker installation with optimal GPU integration
 - ✅ 100% Archon functionality restored with GPU acceleration
@@ -160,12 +179,14 @@ This document provides a **clear path** through the comprehensive infrastructure
 ## 🎯 Quick Decision Matrix
 
 ### **When to Execute Full Reset:**
+
 - ✅ You want optimal, unified cluster infrastructure
 - ✅ You're experiencing NVIDIA/Docker fragmentation issues
 - ✅ You want to implement template-driven configuration management
 - ✅ You have 3 hours available for comprehensive optimization
 
 ### **Alternative Approaches:**
+
 - **🔧 Incremental Updates**: Use individual strategy documents for targeted improvements
 - **⚙️ Configuration Only**: Deploy omni-config without infrastructure reset
 - **🖥️ GPU Only**: Use NVIDIA strategy document for GPU node optimization only
@@ -175,6 +196,7 @@ This document provides a **clear path** through the comprehensive infrastructure
 ## 📋 Pre-Execution Checklist
 
 ### **Prerequisites:**
+
 - [ ] Cluster connectivity verified (SSH access to all nodes)
 - [ ] NFS storage accessible from all nodes
 - [ ] Git repository access confirmed
@@ -182,12 +204,14 @@ This document provides a **clear path** through the comprehensive infrastructure
 - [ ] 3-hour maintenance window scheduled
 
 ### **Critical Preparation:**
+
 - [ ] Review [Systemd Service Management Addendum](documentation/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md) for service complexities
 - [ ] Understand Archon dual-stack architecture (systemd + containers)
 - [ ] Verify Ollama service requirements
 - [ ] Confirm rollback procedures and emergency access
 
 ### **Execution Team:**
+
 - [ ] Administrator with sudo access to all nodes
 - [ ] Understanding of cluster architecture and dependencies
 - [ ] Familiarity with chezmoi template system
@@ -223,6 +247,7 @@ cat SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md
 ## 📞 Support and References
 
 ### **Documentation Hierarchy:**
+
 ```
 START-HERE.md (you are here)
 ├── 📋 COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md (master procedure)
@@ -234,11 +259,13 @@ START-HERE.md (you are here)
 ```
 
 ### **Emergency Procedures:**
+
 - **🆘 Rollback**: Each strategy document includes rollback procedures
 - **🔧 Service Recovery**: Emergency service recovery procedures in service addendum
-- **📞 Support**: Issue tracking at https://github.com/IMUR/colab-config/issues
+- **📞 Support**: Issue tracking at <https://github.com/IMUR/colab-config/issues>
 
 ### **Key Contacts:**
+
 - **📖 Documentation**: All procedures self-contained with examples
 - **🏗️ Architecture**: Comprehensive system design documentation
 - **⚙️ Configuration**: Template-driven management with node-specific capabilities
@@ -250,18 +277,21 @@ START-HERE.md (you are here)
 After completing the three-stage process, you will have:
 
 ### **Infrastructure Excellence:**
+
 - **🖥️ Modern GPU Stack**: NVIDIA 560.x + CUDA 12.6+ with full development toolkit
 - **🐳 Optimized Docker**: Clean installation with perfect GPU integration
 - **⚙️ Unified Configuration**: Template-driven, node-specific management
 - **🔧 Service Reliability**: Proper systemd service management and health monitoring
 
 ### **Application Continuity:**
+
 - **📊 100% Archon Preservation**: Complete functionality with enhanced GPU acceleration
 - **🦙 Ollama Integration**: Systemd service + container optimization
 - **📈 Performance Optimization**: Multi-GPU support and inference acceleration
 - **🔄 Zero Data Loss**: All application data and configurations preserved
 
 ### **Operational Readiness:**
+
 - **📋 Comprehensive Documentation**: Complete procedures and troubleshooting
 - **🎯 Scalable Architecture**: Ready for future nodes and applications
 - **🔍 Health Monitoring**: Automated service and performance validation

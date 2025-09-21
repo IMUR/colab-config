@@ -15,6 +15,7 @@ This repository manages all co-lab cluster configurations using a **strategic hy
 - **Clear Separation**: Right tool for the right job
 
 ### **Why Hybrid?**
+
 - ✅ **Ansible**: Perfect for system administration, package management
 - ✅ **Chezmoi**: Purpose-built for user dotfiles and cross-machine consistency
 - ✅ **Safer**: User-level changes vs dangerous system modifications  
@@ -24,44 +25,65 @@ This repository manages all co-lab cluster configurations using a **strategic hy
 
 ```
 colab-config/
-├── 📍 START-HERE.md            # 🚀 NAVIGATION GUIDE for infrastructure optimization
-├── 🎯 omni-config/        # PRIMARY: User configurations (chezmoi)
-│   ├── dot_zshrc         # Modern shell configuration
-│   ├── dot_profile       # Universal profile + tool detection
-│   ├── dot_config/       # Tool configurations (starship, etc.)
-│   ├── tools/            # Tool-specific settings
-│   └── PLATONIC-NODE-GUIDE.md # Reference for theoretical ideal state
-├── 🔧 ansible/            # MINIMAL: System-level only
-│   ├── playbooks/        # Health checks, basic system setup
-│   ├── inventory/        # Node definitions
-│   └── group_vars/       # Basic node grouping
-├── 📚 documentation/      # Comprehensive guides
-│   ├── architecture/     # System design & implementation strategies
-│   │   ├── COLAB-CLUSTER-ARCHITECTURE.md  # Cluster architecture overview
-│   │   ├── NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md  # GPU/CUDA deployment strategy
-│   │   └── DOCKER-CLEAN-REINSTALL-STRATEGY.md  # Docker optimization with Archon preservation
-│   ├── procedures/       # Deployment and operational guides
-│   │   ├── COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md  # End-to-end reset procedure
-│   │   └── SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md     # Service management for infrastructure reset
-│   └── AI-AGENT-*.md     # Agent-focused procedures
-├── 🛠️ services/          # Optional service configs
-├── 🏗️ infrastructure/    # Supporting configurations
-└── 📜 scripts/           # Utility scripts
+├── 📍 README.md              # Primary project documentation (this file)
+├── 🧭 trail.yaml            # Machine-readable structure & navigation
+├── 🤖 AGENTS.md             # Minimal AI runtime information
+├── 🚀 START-HERE.md         # Quick navigation guide
+├── 📋 CLAUDE.md             # Repository guidelines for Claude
+│
+├── 🎯 omni-config/          # PRIMARY: User configurations (chezmoi source)
+│   ├── dot_*.tmpl          # Chezmoi templates (MUST stay at root)
+│   ├── dot_config/         # Tool configurations
+│   ├── ansible/            # User-level Ansible playbooks
+│   └── PLATONIC-NODE-GUIDE.md # Reference implementation
+│
+├── 🔧 system-ansible/       # MINIMAL: System-level automation
+│   ├── playbooks/          # System configuration playbooks
+│   ├── inventory/          # Node definitions
+│   └── group_vars/         # Variable definitions
+│
+├── 📚 docs/                 # Consolidated documentation
+│   ├── governance/         # Rules, standards, decisions
+│   │   └── STRICT-RULES.md # Non-negotiable constraints
+│   ├── guides/             # Implementation guides
+│   │   ├── RESTRUCTURE-GUIDE.md # Repository restructuring
+│   │   └── COMPLETION-PATH.md   # Path to completion
+│   ├── architecture/       # System design documentation
+│   ├── procedures/         # Operational procedures
+│   └── archive/            # Historical documentation
+│
+├── 🏗️ node-configs/         # Node-specific configurations
+│   ├── crtr-config/        # Cooperator (gateway) specific
+│   ├── prtr-config/        # Projector (compute) specific
+│   └── drtr-config/        # Director (ML platform) specific
+│
+├── 🛠️ deployment/           # Deployment and orchestration
+│   ├── scripts/            # Deployment automation
+│   └── workflows/          # Orchestration workflows
+│
+├── 🔌 services/             # Service configurations
+├── ⚙️ infrastructure/       # Infrastructure configs
+├── 📜 scripts/              # Utility scripts
+└── 📊 logs/                 # Operational logs
 ```
 
 ### **Focus Areas:**
-- **🎯 omni-config/**: **Primary focus** - Rich user experience via chezmoi
-- **🔧 ansible/**: **Minimal usage** - Basic system preparation only  
-- **📚 documentation/**: **Comprehensive** - Clear deployment procedures
+
+- **🎯 omni-config/**: **Primary focus** - Universal user configurations via Chezmoi
+- **🔧 system-ansible/**: **Minimal usage** - System-level operations only
+- **🏗️ node-configs/**: **Specialization** - Node-specific customizations
+- **📚 docs/**: **Knowledge base** - Consolidated documentation hierarchy
 
 ## 🎯 Three Node Cluster
 
 **Core Cluster Nodes:**
+
 - **cooperator (crtr)** - Gateway, NFS server, DNS (Pi5, 16GB RAM)
 - **projector (prtr)** - Compute power, multi-GPU (x86, 128GB RAM, 4x GPU)
 - **director (drtr)** - ML platform, dedicated GPU (x86, 64GB RAM, 1x GPU)
 
 **Network Configuration:**
+
 - **Internal Network**: 192.168.254.0/24
 - **DNS**: .ism.la domain via Pi-hole on cooperator
 - **Public Access**: Port forwarding through cooperator (22, 80, 443)
@@ -69,6 +91,7 @@ colab-config/
 ## 🎯 Getting Started
 
 ### **📍 START HERE for Infrastructure Optimization**
+
 **🚀 New to the project?** **Looking to optimize your cluster?** **Need infrastructure reset?**
 
 **👉 [START-HERE.md](START-HERE.md)** - Your complete navigation guide for the three-stage infrastructure optimization process.
@@ -106,6 +129,7 @@ done
 ```
 
 ### **Optional: System-Level Setup**
+
 ```bash
 # Only if system-wide environment needed
 ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
@@ -113,21 +137,25 @@ ansible-playbook ansible/playbooks/cluster-health.yml  # Health check
 ```
 
 ### **Infrastructure Reset and Optimization**
+
 For complete cluster infrastructure optimization with application preservation:
 
 **🎯 Complete Infrastructure Reset:**
+
 - **📖 Guide**: [Complete Infrastructure Reset Sequence](documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md)
 - **Strategy**: Clean slate → omni-config deployment → optimal reinstallation
 - **Timeline**: ~3 hours total, ~2 hours downtime
 - **Applications**: 100% Archon preservation throughout process
 
 **🖥️ GPU Node Setup (Projector & Director):**
+
 - **📖 Guide**: [NVIDIA/CUDA Implementation Strategy](documentation/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md)
 - **Scope**: Complete NVIDIA driver + CUDA toolkit installation
 - **Integration**: Chezmoi templates for node-specific GPU configurations
 - **Workloads**: Optimized for Ollama, vLLM, llama.cpp, PyTorch inference
 
 **🐳 Docker Infrastructure:**
+
 - **📖 Guide**: [Docker Clean Reinstall Strategy](documentation/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md)
 - **Approach**: Complete removal with 100% Archon container preservation
 - **Benefits**: Eliminates fragmentation, enables optimal GPU integration
@@ -138,12 +166,14 @@ For complete cluster infrastructure optimization with application preservation:
 ### **Hybrid Architecture** ✅ **ACTIVE**
 
 **System-Level (Minimal Ansible)**:
+
 - Package installation and basic system setup
 - /etc/profile.d/ for system-wide environment
 - Service management and health monitoring
 - Minimal, focused, low-risk operations
 
 **User-Level (Pure Chezmoi)**:
+
 - Rich shell environments managed via chezmoi templates
 - Modern CLI tool suite with intelligent detection and fallbacks
 - Development environment configurations with cross-node consistency
@@ -154,12 +184,14 @@ For complete cluster infrastructure optimization with application preservation:
 ## 📚 Key Services
 
 ### Web Interfaces
-- **Semaphore**: https://cfg.ism.la (Ansible automation UI)
-- **Cockpit**: https://mng.ism.la (System management)
-- **SSH Terminal**: https://ssh.ism.la (Web-based terminal)
-- **DNS Management**: https://dns.ism.la (Pi-hole interface)
+
+- **Semaphore**: <https://cfg.ism.la> (Ansible automation UI)
+- **Cockpit**: <https://mng.ism.la> (System management)
+- **SSH Terminal**: <https://ssh.ism.la> (Web-based terminal)
+- **DNS Management**: <https://dns.ism.la> (Pi-hole interface)
 
 ### Core Infrastructure
+
 - **NFS Server**: Shared storage at `/cluster-nas`
 - **DNS Resolution**: Pi-hole with custom .ism.la domain
 - **Reverse Proxy**: Caddy for web service routing
@@ -168,11 +200,13 @@ For complete cluster infrastructure optimization with application preservation:
 ## 🛡️ Security & Maintenance
 
 ### Backup Strategy
+
 - **Daily Automated Backups**: All configurations backed up to `/cluster-nas/backups/`
 - **Version Control**: All changes tracked in git
 - **Rollback Capability**: Quick reversion using Ansible playbooks
 
 ### Security Features
+
 - **SSH Key Authentication**: No password access
 - **Internal Network**: Services isolated on private network
 - **Controlled Access**: Public access only through designated ports
@@ -181,6 +215,7 @@ For complete cluster infrastructure optimization with application preservation:
 ## 📋 Modern Operations
 
 ### **Daily Health Checks**
+
 ```bash
 # Quick cluster health (minimal ansible)
 ansible-playbook ansible/playbooks/cluster-health.yml
@@ -192,6 +227,7 @@ done
 ```
 
 ### **Configuration Updates**
+
 ```bash
 # Update user configurations (primary method)
 # 1. Edit configs in /cluster-nas/colab/colab-config/omni-config/
@@ -215,6 +251,7 @@ ansible-playbook ansible/playbooks/cluster-health.yml
 ```
 
 ### **Maintenance Workflow**
+
 1. **User configs**: Update omni-config, deploy via chezmoi (primary)
 2. **System-level**: Use minimal ansible only when required
 3. **Validation**: Test configurations on each node
@@ -223,6 +260,7 @@ ansible-playbook ansible/playbooks/cluster-health.yml
 ## 🚨 Emergency Procedures
 
 ### **Quick Recovery (Low Risk)**
+
 ```bash
 # Configuration rollback (primary method)
 for node in crtr prtr drtr; do
@@ -240,11 +278,13 @@ done
 ```
 
 ### **Access Methods (Unchanged)**
+
 1. **Primary**: SSH via cooperator (192.168.254.10)
-2. **Web Management**: Cockpit at https://mng.ism.la  
+2. **Web Management**: Cockpit at <https://mng.ism.la>  
 3. **Direct Console**: Physical access to cooperator Pi5
 
 ### **Why Recovery is Easier:**
+
 - ✅ **User-level changes**: No system modification risks
 - ✅ **Fast rollback**: Chezmoi revert vs complex ansible restore
 - ✅ **Safe operations**: Configuration errors won't break SSH access
@@ -259,6 +299,7 @@ done
 ## 🎯 Modern Implementation Status
 
 ### ✅ **Completed**
+
 - **Hybrid Architecture**: Strategic separation of system vs user configs
 - **Pure Chezmoi Foundation**: Rich user configuration system  
 - **Minimal Ansible**: Focused system-level operations only
@@ -266,11 +307,13 @@ done
 - **20-minute Deployment**: Fast, safe, user-level configuration management
 
 ### 🔄 **Active**
+
 - **Daily Operations**: Hybrid approach in production use
 - **Continuous Improvement**: Ongoing omni-config refinements
 - **Documentation**: Comprehensive guides and procedures
 
 ### 📋 **Future Enhancements**
+
 - **System-wide Environment**: Optional /etc/profile.d/ configurations
 - **Automated Health Monitoring**: Enhanced cluster validation
 - **Advanced Templating**: Node-specific configuration variations
@@ -278,5 +321,5 @@ done
 ---
 
 **Maintained by**: Co-lab Infrastructure Team
-**Repository**: https://github.com/IMUR/colab-config
+**Repository**: <https://github.com/IMUR/colab-config>
 **License**: Private - Co-lab Cluster Infrastructure
