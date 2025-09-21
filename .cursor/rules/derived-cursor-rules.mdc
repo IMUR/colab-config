@@ -20,6 +20,10 @@ The "colab-config" project aims to provide a comprehensive infrastructure config
 - VSCode Extension 'alefragnani.project-manager': Helps manage project-related tasks within VSCode. This extension helps manage project-related tasks within VSCode.
 - jq: A lightweight and flexible command-line JSON processor.
 - fastfetch: A command-line system information tool.
+- lynx: A text-based web browser for headless environments.
+- ripgrep (rg): For fast text search
+- fzf: For fuzzy finding
+- grep: For pattern matching
 
 ## PROJECT STRUCTURE
 
@@ -170,7 +174,7 @@ In your `omni-config` directory, you will have a file named `dot_config/chezmoi/
     {{ end -}}
 ```
 **How it works:**
-*   When you run `chezmoi apply` on `prtr`, `chezmoi` processes this template first.
+*   When you run `chezmoi apply` on `prtr`, `chezmoi processes this template first.
 *   It sees `{{ if eq .chezmoi.hostname "prtr" }}` is true and generates a `~/.config/chezmoi/chezmoi.toml` file containing `node_role = "compute"` and `has_gpu = true`.
 *   These variables (`.node_role` and `.has_gpu`) are now available for all other templates to use during that same `chezmoi apply` run.
 
@@ -255,6 +259,10 @@ The current objective is a three-stage infrastructure reset:
 - Restore Archon dual-stack functionality
 - Restore all services with enhanced GPU acceleration
 
+### Claude-Code Installation Strategy for AI Agents
+Implement a system Node.js environment (v20.19.2) to resolve dependency and path resolution conflicts.
+- **System Node**: Globally accessible at predictable paths for tools and services.
+
 ## WORKFLOW & RELEASE RULES
 
 1.  Create feature branches for new development.
@@ -304,6 +312,76 @@ The current objective is a three-stage infrastructure reset:
 32. The AI should carry out intended actions directly so that each step can be validated.
 33. When reorganizing the project structure, use `git mv` instead of `mv` to preserve git history.
 34. During project reorganization, create symlinks for backward compatibility during the transition period.
+35. **Assess Before Acting**: Gather complete system state before changes
+36. **Preserve Working State**: Never break functioning components
+37. **Test Incrementally**: Verify each phase before proceeding
+38. **Document Decisions**: Record why specific approaches were chosen
+39. **Maintain Rollback Path**: Ensure every change can be undone
+40. **Acknowledge Limitations**: When operating in environments without direct access to cluster nodes, the AI must acknowledge these limitations and provide assessment frameworks for manual execution.
+41. **Avoid redundant SSH calls**: When already on a target node, execute commands directly instead of attempting to SSH into it.
+42. If NVM is reinstalled, it should be used selectively. Default to system Node for global tools, system scripts, production-like stability, and a consistent environment across all cluster nodes, while reserving NVM for project-specific Node versions, testing across versions, legacy projects, and bleeding-edge features.
+43. NVM is no longer used.
+44. When authenticating `claude` on headless Debian, override the BROWSER variable to use lynx or echo if the browser is not opening.
+45. If Claude search is "Not working (vendor)" in global installations it is likely a global installation limitation and requires local installation of the claude-code package.
+46. A hybrid approach should be used for Claude: Keep global for basic usage, local only for projects needing search
+```bash
+# Global for daily use (keep current setup)
+claude --version  # Always available
+
+# Local only for projects needing search
+cd /cluster-nas/colab/colab-config
+npm install @anthropic-ai/claude-code  # Just for this project
+alias claude-search='npx claude-code'  # Search-enabled version
+```
+47. The colab-config repo should have a clean system, and the AI should leverage the excellent CLI tool suite for search tasks:
+    - **claude**: For AI assistance and code generation
+    - **ripgrep (rg)**: For fast text search
+    - **fzf**: For fuzzy finding
+    - **grep**: For pattern matching
+48. Claude-code should be installed locally using `claude migrate-installer` after being installed with system node.
+49. After removing the symlinks, a clean cache reinstall of claude code should be performed.
+50. The following actions should be performed to ensure Claude is operating properly:
+    - Remove the .claude symlink
+    - Clean npm cache
+    - Uninstall claude-code
+    - Reinstall claude-code
+51. The following steps should be performed to transition to a local Claude installation and resolve search issues:
+    - Remove the global claude installation: `sudo npm uninstall -g @anthropic-ai/claude-code`
+    - Run `claude migrate-installer` to create a local installation.
+    - Update `dot_profile.tmpl` to include the local claude path:
+    ```
+    # Claude local installation PATH
+    if [ -d "$HOME/.claude/local" ]; then
+        add_to_path "$HOME/.claude/local"
+    fi
+    ```
+    - Deploy the updated configuration using Chezmoi.
+52. If `claude migrate-installer` fails due to TTY issues in SSH, try with pseudo-TTY allocation: `ssh -t <node> "claude migrate-installer"`.
+53. **If a global installation of claude-code exists, it must be removed before proceeding with `migrate-installer`.** The `migrate-installer` command may fail or produce inconsistent results if a global installation is not removed first.
+54. It is recommended to use `/doctor` to verify the installation state.
+55. The following steps have been determined to be the correct and final approach to installing Claude:
+    - Remove any existing `.claude` symlink in the home directory.
+    - Clean the npm cache: `sudo npm cache clean --force`
+    - Globally uninstall claude-code: `sudo npm uninstall -g @anthropic-ai/claude-code`
+    - Install claude-code globally: `sudo npm install -g @anthropic-ai/claude-code@latest`
+    - Run `claude migrate-installer`
+    - Remove global installation: `sudo npm uninstall -g @anthropic-ai/claude-code`
+56. If search is still not working after running `migrate-installer`, a clean cache reinstall should be performed.
+57. Clean crtr's configuration after migrate-installer by doing the following
+    - Back up the ~/.claude directory
+    - Remove the local claude installation
+    - Clean npm cache
+58. The following actions must be taken to ensure crtr's Claude config is in a clean state:
+    - Backup the ~/.claude directory
+    - Remove the ~/.claude directory
+59. **If search is still not working after running `migrate-installer`, and a clean reinstall, and the node has a complex or bloated `~/.claude.json`, the entire `~/.claude` directory should be removed, and the node reconfigured.**
+60. If Migrate Installer fails with a TTY error, try allocating a pseudo-TTY with the command: ssh -t <node> "claude migrate-installer".
+61. If the above step fails, move to a full clean and re-install on the node, to ensure the environment is reset and that there are no file conflicts or lingering configurations.
+62. If GVFS errors occur, it means claude is trying to access a non-existent SFTP mount via GNOME Virtual File System, and implies there are problematic project configurations that need to be addressed.
+63. Remove all NVM references from omni-config templates.
+64. Disable NVM in ansible configurations.
+65. Update documentation to reflect system Node approach.
+66. If Claude search is not working on ARM64 systems, it may be a platform-specific limitation and should be noted.
 
 ## CODING STANDARDS
 
@@ -499,8 +577,6 @@ The project implements a **hybrid configuration management strategy**:
 - ✅ Industry-standard Git workflow
 - ✅ Comprehensive rollback procedures
 
-This documentation index provides complete coverage of the Co-lab cluster infrastructure project, from high-level architecture to detailed implementation procedures. The extensive documentation supports the project's goal of achieving unified, optimal configuration management across the 3-node cluster.
-
 ## SECURITY
 
 1.  Follow security best practices for Ansible and Chezmoi.
@@ -536,115 +612,5 @@ When troubleshooting, consider the following:
 *   Simple validation: `source ~/.zshrc` test vs full system checks
 *   Isolated impact: Shell configs don't affect critical services
 
-## DEPRECATED
-
--   Symlink-based configuration deployment is deprecated. Migrate to Chezmoi-based deployment.
-
-## OPEN ISSUES & FUTURE ENHANCEMENTS
-
--   Implement system-wide environment configuration via `/etc/profile.d/`.
--   Automate health monitoring and alerting.
--   Enhance backup strategies.
--   Optimize performance.
--   Convert `dot_profile` to `dot_profile.tmpl` to enable node-specific customizations.
-
-## ARCHITECTURAL DECISIONS
-
-- The `dot_profile` file must be converted to a template (`dot_profile.tmpl`) to enable node-specific customizations. This resolves the `prtr` shell initialization issue by ensuring a uniform approach to shell setup, using the pre-existing node metadata already defined in the chezmoi configuration.
-- Templating the profile would resolve the SSH session initialization issues by ensuring a uniform approach to shell setup, using the pre-existing node metadata already defined in the chezmoi configuration.
-- The hybrid configuration approach should be consistently templated across all managed files, not mixing runtime detection with template-time resolution.
-
-### Template Solution Structure:
-```bash
-# dot_profile.tmpl
-# Node identification (template-time, not runtime)
-export NODE_TYPE="{{ .node_role }}"
-export NODE_ROLE="{{ .hostname }}"
-
-{{- if .has_multi_gpu }}
-export HAS_GPU=1
-{{- else if .has_single_gpu }}
-export HAS_GPU=1
-{{- else }}
-export HAS_GPU=0
-{{- end }}
-
-{{- if .has_pi_hardware }}
-export HAS_PI_HARDWARE=1
-{{- end }}
-
-# Architecture-specific PATH handling
-{{- if .is_arm64 }}
-# ARM64-specific tool paths
-{{- else }}
-# x86_64-specific tool paths  
-{{- end }}
-```
-
-### Hybrid Configuration System Discovered
-
-Great question! The symlink check reveals a **hybrid configuration system**:
-
-### Current State Found:
-1. **Legacy Symlinks**: ZSH system files (`.zshenv`, `.zprofile`, `.zlogout`) → `/cluster-nas/configs/zsh/`
-2. **Chezmoi Files**: Shell RC files (`.profile`, `.zshrc`, `.bashrc`) → Regular files managed by chezmoi
-3. **Clean Status**: All nodes show empty `chezmoi status` (up to date)
-
-### Key Finding:
-The main shell files are **regular files** (not symlinks), confirming chezmoi is managing them properly.
-
-### Node-Specific Symlink Patterns:
-
-**crtr (cooperator)**:
-- **Minimal symlinks**: Mostly deep cache/development symlinks
-- **3 ZSH system symlinks** to `/cluster-nas/configs/zsh/`
-
-**prtr (projector)**:
-- **MASSIVE symlink proliferation**: Hundreds of symlinks!
-- **Application-heavy**: Brave Browser, Docker Desktop, systemd services
-- **Visual browser impact**: These user-level app symlinks show up in file managers
-- **Same 3 ZSH system symlinks** as other nodes
-
-**drtr (director)**:
-- **Manual tool symlinks**: `fd → /usr/bin/fdfind`, `bat → /usr/bin/batcat`
-- **3 ZSH system symlinks** to `/cluster-nas/configs/zsh/`
-
-### Shell Loading Conflict on `prtr`**:
-The extensive application symlinks on `prtr` (systemd services, Docker, browsers) are **interfering with shell initialization** because:
-
-- **systemd user services** may affect environment loading
-- **Browser processes** create additional shell contexts
-- **Docker Desktop** modifies PATH and environment during startup
-- The **symlink-heavy environment** creates initialization timing issues
-
-### Resolution
-The following actions must be taken to resolve configuration overlaps:
-
-1. **Legacy Symlinks**: The following ZSH symlinks must be removed.
-    - `~/.zshenv`
-    - `~/.zprofile`
-    - `~/.zlogout`
-2. Instead of deleting the symlinks, move the actual files from `/cluster-nas/configs/zsh/` to `.archive/configuration-overlaps/zsh-system-files`, and update the `.archive/README.md`.
-3. To ensure a consistent configuration, the `dot_profile.tmpl` must be deployed via chezmoi across all nodes.
-
-The `dot_profile.tmpl` approach becomes **essential** because:
-
-1. **Eliminates Runtime Dependencies**: Node-specific values are baked in at deployment time
-2. **Bypasses Shell Conflicts**: Template-rendered values work regardless of symlink interference
-3. **Consistency Across Environments**: Same approach as the working `.zshrc.tmpl` and `.bashrc.tmpl`
-
-### The Prioritized Relationship of the Shell Files
-
-Think of the shell startup as building layers, from the most fundamental environment to the final interactive experience. Each file has one clear job.
-
-#### 1. **`dot_profile.tmpl` is the Foundation** (Highest Priority)
-*   **Its Job:** **Environment variables ONLY.** This file's sole purpose is to define the non-interactive environment for *all* shells (Bash, Zsh, even graphical logins).
-*   **What Goes Here:** All `export` commands, especially `$PATH`, `$NVM_DIR`, and `$EDITOR`. It should also contain the `path_prepend` function.
-*   **The Golden Rule:** This file is the single source of truth for the environment. It must be POSIX-compliant (use `sh` syntax) so any shell can understand it.
-
-#### 2. **`dot_zshrc.tmpl` & `dot_bashrc.tmpl` are for the Interactive Experience**
-*   **Their Job:** Configure the **interactive** shell. This is everything that happens *after* the environment is set.
-*   **Their First Action:** They **MUST** source `~/.profile` at the very top. This is the critical step that guarantees a consistent environment, no matter how the shell was started.
-    *   In `.zshrc`: `emulate sh -c 'source ~/.profile'`
-    *   In `.bashrc`: `. ~/.profile`
-*   **What Goes Here:** Aliases, shell functions, prompt setup (`starship init`), and loading interactive
+### OAuth Authentication in Headless Environments
+When dealing with OAuth authentication in a headless terminal environment like `crtr`, consider these options:
