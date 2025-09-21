@@ -41,8 +41,8 @@ workspace_directories:
 # Development tools configuration
 development_tools:
   nodejs:
-    enable_nvm: true
-    default_version: "lts"
+    enable_nvm: false  # DISABLED - Using system Node.js only
+    default_version: "system"
   python:
     enable_venv: true
     default_version: "3.11"

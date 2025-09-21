@@ -17,7 +17,7 @@ This directory contains the **user environment foundation** for the co-lab clust
 - **`dot_zshrc.tmpl`**: Modern ZSH configuration with performance optimization (template)
 - **`dot_bashrc.tmpl`**: Modern Bash configuration with unified tool integration (template)
 - **`dot_config/starship.toml`**: Professional shell prompt configuration
-- **`.chezmoitemplate.nvm-loader.sh`**: Shared NVM loading template for consistent Node.js environment
+- **System Node.js**: System-wide Node.js installation for consistent tool environment
 
 ### **Tool Integration System**
 - **Smart Detection**: Handles cross-architecture differences (ARM64 vs x86_64)
@@ -33,7 +33,7 @@ omni-config/
 ├── dot_profile                     # Universal profile + HAS_* tool detection
 ├── dot_zshrc.tmpl                  # Modern ZSH with tool integrations (template)
 ├── dot_bashrc.tmpl                 # Modern Bash with tool integrations (template)
-├── .chezmoitemplate.nvm-loader.sh  # Shared NVM loading template
+├── # .chezmoitemplate.nvm-loader.sh removed - system Node.js only
 ├── dot_config/                     # Tool-specific configurations
 │   └── starship.toml              # Professional prompt setup
 ├── tools/                          # Tool management (archived)
@@ -118,7 +118,7 @@ done
 - ✅ `.chezmoi.toml.tmpl` - Node templating data (cooperator/projector/director)
 - ✅ Template system - .tmpl files with shared includes (.chezmoitemplate files)
 - ✅ GitHub remote deployment - Decoupled from local NFS for operations
-- ✅ Unified shell management - Both bash and zsh with consistent NVM loading
+- ✅ Unified shell management - Both bash and zsh with system Node.js environment
 - ✅ Node-specific customization - Templates render different configs per node role
 - ⚠️ **Template consistency needed** - dot_profile should be dot_profile.tmpl for node-specific elements
 

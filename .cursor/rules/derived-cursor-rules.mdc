@@ -260,11 +260,8 @@ The current objective is a three-stage infrastructure reset:
 - Restore all services with enhanced GPU acceleration
 
 ### Claude-Code Installation Strategy for AI Agents
-Implement a dual Node.js environment (system Node and NVM Node) to resolve dependency and path resolution conflicts.
-
-1. **System Node** (v20.19.2) → For stable tools like claude-code
-
-2. **Enhanced Configuration** → Updated omni-config templates
+Implement a system Node.js environment (v20.19.2) to resolve dependency and path resolution conflicts.
+- **System Node**: Globally accessible at predictable paths for tools and services.
 
 ## WORKFLOW & RELEASE RULES
 
@@ -378,6 +375,13 @@ alias claude-search='npx claude-code'  # Search-enabled version
     - Backup the ~/.claude directory
     - Remove the ~/.claude directory
 59. **If search is still not working after running `migrate-installer`, and a clean reinstall, and the node has a complex or bloated `~/.claude.json`, the entire `~/.claude` directory should be removed, and the node reconfigured.**
+60. If Migrate Installer fails with a TTY error, try allocating a pseudo-TTY with the command: ssh -t <node> "claude migrate-installer".
+61. If the above step fails, move to a full clean and re-install on the node, to ensure the environment is reset and that there are no file conflicts or lingering configurations.
+62. If GVFS errors occur, it means claude is trying to access a non-existent SFTP mount via GNOME Virtual File System, and implies there are problematic project configurations that need to be addressed.
+63. Remove all NVM references from omni-config templates.
+64. Disable NVM in ansible configurations.
+65. Update documentation to reflect system Node approach.
+66. If Claude search is not working on ARM64 systems, it may be a platform-specific limitation and should be noted.
 
 ## CODING STANDARDS
 
@@ -610,24 +614,3 @@ When troubleshooting, consider the following:
 
 ### OAuth Authentication in Headless Environments
 When dealing with OAuth authentication in a headless terminal environment like `crtr`, consider these options:
-
-1. **Install a text-based browser**:
-   ```bash
-   sudo apt update && sudo apt install -y lynx
-   ```
-   Then use it to open the OAuth URL:
-   ```bash
-   lynx https://claude.ai/oauth/authorize?code=true&client_id=...
-   ```
-
-2. **Use SSH tunneling (if you have X11 forwarding)**:
-   ```bash
-   ssh -X crtr
-   # Then try to open the URL in a browser
-   ```
-
-3. **Manual token approach**:
-   Check if the CLI tool (e.g., `claude-code`) has an option to input the code manually.
-
-4. **Use `curl` to get the authorization code**:
-   Potentially

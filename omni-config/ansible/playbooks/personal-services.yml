@@ -28,14 +28,15 @@
     # DEVELOPMENT TOOL INTEGRATIONS
     # ====================================================================
 
-    - name: Configure NVM integration (if available)
-      block:
-        - name: Check if NVM directory exists
-          stat:
-            path: "{{ user_home }}/.nvm"
-          register: nvm_check
+    # DISABLED: NVM integration removed - using system Node.js only
+    # - name: Configure NVM integration (if available)
+    #   block:
+    #     - name: Check if NVM directory exists
+    #       stat:
+    #         path: "{{ user_home }}/.nvm"
+    #       register: nvm_check
 
-        - name: Create NVM integration script
+    #     - name: Create NVM integration script
           copy:
             dest: "{{ tools_directory }}/nvm-setup"
             content: |
