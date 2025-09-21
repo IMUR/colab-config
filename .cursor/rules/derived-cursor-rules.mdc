@@ -49,9 +49,9 @@ colab-config/
 │   └── host_vars/
 ├── 🛠️ deployment/                      # DEPLOYMENT UTILITIES
 │   └── scripts/                        # Deployment and validation scripts
-├── 📚 documentation/                   # Comprehensive guides
+├── 📚 docs/                 # Consolidated documentation
 ├── 🛠️ services/                        # Service configurations
-└── 🏗️ infrastructure/                  # Supporting configurations
+└── ⚙️ infrastructure/                  # Supporting configurations
 ```
 
 ### Focus Areas:
@@ -411,18 +411,11 @@ alias claude-search='npx claude-code'  # Search-enabled version
 ### Key Documents:
 
 -   `README.md`: Project overview and quick start guide.
--   `documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md`: System architecture and design decisions.
+-   `docs/architecture/COLAB-CLUSTER-ARCHITECTURE.md`: System architecture and design decisions.
 -   `AI-AGENT-QUICKSTART.md`: Quick start guide for AI agents on snitcher.
 -   `CLAUDE.md`: Repository guidelines for Claude.
 
 ### AI Agent Integration
-
--   **20-minute Assessment**: Use updated `AI-AGENT-QUICKSTART.md` for hybrid deployment
--   Comprehensive Guide**: Follow `documentation/procedures/AI-AGENT-DEPLOYMENT-GUIDE.md` (REMOVED: Replaced by enhanced Quickstart guide)
--   Modern Approach**: Hybrid strategy - minimal ansible + pure chezmoi
--   Low Risk**: User-level changes only, SSH access preserved
-
-### Deployment Confidence
 
 -   ✅ **Low Risk**: User-level configurations only
 -   ✅ **Fast Recovery**: Simple chezmoi rollback vs complex system restore
@@ -488,15 +481,15 @@ This comprehensive index covers all documentation in the Co-lab cluster configur
 - **`STAGE2-VALIDATION-COMPLETE.md`** - Stage 2 completion confirmation
 
 ### **Architecture Documentation**
-- **`documentation/architecture/COLAB-CLUSTER-ARCHITECTURE.md`** - Complete cluster architecture overview, node roles, network design, and hybrid configuration strategy
-- **`documentation/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md`** (665 lines) - Comprehensive GPU stack deployment strategy
-- **`documentation/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md`** (850 lines) - Docker optimization with Archon preservation procedures
-- **`documentation/architecture/README.md`** - Architecture documentation index
+- **`docs/architecture/COLAB-CLUSTER-ARCHITECTURE.md`** - Complete cluster architecture overview, node roles, network design, and hybrid configuration strategy
+- **`docs/architecture/NVIDIA-CUDA-IMPLEMENTATION-STRATEGY.md`** (665 lines) - Comprehensive GPU stack deployment strategy
+- **`docs/architecture/DOCKER-CLEAN-REINSTALL-STRATEGY.md`** (850 lines) - Docker optimization with Archon preservation procedures
+- **`docs/architecture/README.md`** - Architecture documentation index
 
 ### **Operational Procedures**
-- **`documentation/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md`** (800 lines) - Master reset procedure for complete infrastructure optimization
-- **`documentation/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md`** (640 lines) - Critical service management procedures for infrastructure reset
-- **`documentation/procedures/README.md`** - Deployment procedures overview
+- **`docs/procedures/COMPLETE-INFRASTRUCTURE-RESET-SEQUENCE.md`** (800 lines) - Master reset procedure for complete infrastructure optimization
+- **`docs/procedures/SYSTEMD-SERVICE-MANAGEMENT-ADDENDUM.md`** (640 lines) - Critical service management procedures for infrastructure reset
+- **`docs/procedures/README.md`** - Deployment procedures overview
 
 ## ⚙️ Configuration Management Documentation
 
@@ -506,19 +499,19 @@ This comprehensive index covers all documentation in the Co-lab cluster configur
 - **`omni-config/PLATONIC-NODE-GUIDE.md`** - Reference implementation guide for theoretical ideal state
 
 ### **Ansible Configuration**
-- **`ansible/README.md`** - Ansible playbooks documentation
-- **`ansible/playbooks/README.md`** - Playbook-specific documentation
-- **`ansible/group_vars/all/hardware_profiles.yml`** - Hardware configuration profiles
-- **`ansible/host_vars/cooperator/specific.yml`** - Node-specific configurations
+- **`system-ansible/README.md`** - Ansible playbooks documentation
+- **`system-ansible/playbooks/README.md`** - Playbook-specific documentation
+- **`system-ansible/group_vars/all/hardware_profiles.yml`** - Hardware configuration profiles
+- **`system-ansible/host_vars/cooperator/specific.yml`** - Node-specific configurations
 
 ### 🛠️ Implementation and Support Documentation
 
 ### **Scripts and Utilities**
-- **`scripts/active/README.md`** - Production scripts documentation
-- **`scripts/active/cli-tools-test.sh`** - CLI tools validation utility
-- **`scripts/active/sync-claude-configs.sh`** - Claude configuration synchronization
-- **`scripts/active/uv-cluster-migration.sh`** - UV package manager migration automation
-- **`scripts/active/update-docs.sh`** - Documentation maintenance utility
+- **`deployment/scripts/README.md`** - Production scripts documentation
+- **`deployment/scripts/cli-tools-test.sh`** - CLI tools validation utility
+- **`deployment/scripts/sync-claude-configs.sh`** - Claude configuration synchronization
+- **`deployment/scripts/uv-cluster-migration.sh`** - UV package manager migration automation
+- **`deployment/scripts/update-docs.sh`** - Documentation maintenance utility
 
 ### **Service Configuration**
 - **`services/README.md`** - Service configurations overview
