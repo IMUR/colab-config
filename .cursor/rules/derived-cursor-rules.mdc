@@ -607,3 +607,11 @@ When troubleshooting, consider the following:
 
 ### OAuth Authentication in Headless Environments
 When dealing with OAuth authentication in a headless terminal environment like `crtr`, consider these options:
+
+### Claude Code Troubleshooting on ARM64 (Raspberry Pi 5)
+
+The following steps can be taken to resolve common issues with Claude Code on ARM64 systems like the Raspberry Pi 5:
+
+1. **Verify Node.js architecture**: Run `node -e "console.log(process.arch)"` to confirm it reports `arm64`
+2. **Use local agent directories**: Move agents from the shared NFS location to local `~/.claude/agents/` temporarily
+3. **Clean reinstall without NFS**: Uninstall completely, remove all `.claude/
