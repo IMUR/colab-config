@@ -1,0 +1,154 @@
+# Trail: Machine-Readable Documentation Structure
+# Purpose: Provides programmatic access to repository organization
+# Generated: 2025-09-21
+# Version: 1.0.0
+
+metadata:
+  repository: colab-config
+  type: infrastructure-configuration
+  architecture: hybrid-management
+  nodes:
+    - name: cooperator
+      alias: crtr
+      role: gateway
+    - name: projector
+      alias: prtr
+      role: compute
+    - name: director
+      alias: drtr
+      role: ml-platform
+
+structure:
+  root:
+    purpose: "Co-lab cluster configuration management"
+    primary_docs:
+      - README.md: "Complete project documentation"
+      - trail.yaml: "Machine-readable structure (this file)"
+      - AGENTS.md: "AI runtime specifics only"
+      - START-HERE.md: "Quick navigation guide"
+
+  directories:
+    omni-config:
+      purpose: "Universal user configurations (Chezmoi source)"
+      type: protected
+      constraints:
+        - "Chezmoi templates MUST stay at root"
+        - "Do NOT move dot_*.tmpl files to subdirs"
+      subdirs:
+        - ansible/: "User-level Ansible playbooks"
+        - documentation/: "Omni-config specific docs"
+        - validation/: "Validation scripts"
+
+    system-ansible:
+      purpose: "System-level infrastructure automation"
+      type: system
+      note: "Renamed from 'ansible/' for clarity"
+      subdirs:
+        - playbooks/: "System configuration playbooks"
+        - inventory/: "Node definitions"
+        - group_vars/: "Group variables"
+        - host_vars/: "Host-specific variables"
+
+    node-configs:
+      purpose: "Node-specific configurations"
+      type: node-specific
+      subdirs:
+        - crtr-config/: "Cooperator (gateway) specific"
+        - prtr-config/: "Projector (compute) specific"
+        - drtr-config/: "Director (ML platform) specific"
+
+    deployment:
+      purpose: "Deployment and orchestration tools"
+      type: operational
+      subdirs:
+        - scripts/: "Deployment automation"
+        - workflows/: "Orchestration workflows"
+        - validation/: "Deployment validation"
+
+    docs:
+      purpose: "Consolidated documentation"
+      type: documentation
+      subdirs:
+        - governance/: "Rules, decisions, standards"
+        - guides/: "Implementation and usage guides"
+        - archive/: "Historical documentation"
+
+    infrastructure:
+      purpose: "Infrastructure configurations"
+      type: configuration
+      subdirs:
+        - ssh/: "SSH configurations"
+        - starship/: "Shell prompt configs"
+        - fastfetch/: "System info display"
+
+    services:
+      purpose: "Service configurations"
+      type: service
+      subdirs:
+        - semaphore/: "Ansible UI service"
+
+    logs:
+      purpose: "Operational logs and reports"
+      type: temporal
+      note: "Not for permanent documentation"
+
+navigation:
+  entry_points:
+    new_user: "START-HERE.md"
+    developer: "README.md"
+    ai_agent: "AGENTS.md + trail.yaml"
+    maintainer: "docs/governance/STRICT-RULES.md"
+
+  key_paths:
+    user_config: "omni-config/"
+    system_config: "system-ansible/"
+    node_specific: "node-configs/{node}-config/"
+    deployment_tools: "deployment/scripts/"
+    documentation: "docs/"
+
+rules:
+  immutable:
+    - path: ".chezmoiroot"
+      value: "omni-config"
+      reason: "Enables repository flexibility"
+
+    - path: "omni-config/dot_*.tmpl"
+      constraint: "MUST stay at omni-config root"
+      reason: "Chezmoi requirement"
+
+  naming:
+    - pattern: "*-config"
+      usage: "Node-specific directories only"
+    - pattern: "system-*"
+      usage: "System-level operations"
+    - pattern: "dot_*"
+      usage: "Chezmoi templates only"
+
+  git_operations:
+    - rule: "ALWAYS use git mv"
+      reason: "Preserve history"
+    - rule: "Atomic commits"
+      reason: "Clear change tracking"
+
+validation:
+  required_files:
+    - ".chezmoiroot"
+    - "README.md"
+    - "trail.yaml"
+
+  required_tests:
+    - "chezmoi status"
+    - "git status"
+    - "ansible all -m ping"
+
+  structure_tests:
+    - test: "omni-config contains dot_*.tmpl files"
+      command: "ls omni-config/dot_*.tmpl"
+    - test: "system-ansible contains playbooks"
+      command: "ls system-ansible/playbooks/*.yml"
+
+status:
+  restructure_phase: "planning"
+  deployment_status: "working"
+  last_validated: "2025-09-21"
+# End of trail.yaml

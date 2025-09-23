@@ -1,10 +1,4 @@
-# SpecStory auto-generated files and backups
-.specstory/
-# Archive directory (moved/deleted files)
-.archive/
-# Large binary files (same as .gitignore for consistency)
-containerization/**/*.tar
-*.tar.gz
-*.zip
+# SpecStory derived-cursor-rules.mdc backup files
+/ai_rules_backups/*
 # SpecStory derived-cursor-rules.mdc backup files
 .specstory/ai_rules_backups/*

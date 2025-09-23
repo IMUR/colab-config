@@ -1,0 +1,36 @@
+  UNIT                      LOAD   ACTIVE SUB     DESCRIPTION
+  atuin-server.service      loaded active running Atuin Sync Server (LAN) for user crtr
+  bluetooth.service         loaded active running Bluetooth service
+  caddy.service             loaded active running Caddy
+  cron.service              loaded active running Regular background program processing daemon
+  dbus.service              loaded active running D-Bus System Message Bus
+  fsidd.service             loaded active running NFS FSID Daemon
+  gotty.service             loaded active running GoTTY Web Terminal
+  NetworkManager.service    loaded active running Network Manager
+  nfs-blkmap.service        loaded active running pNFS block layout mapping daemon
+  nfs-idmapd.service        loaded active running NFSv4 ID-name mapping service
+  nfs-mountd.service        loaded active running NFS Mount Daemon
+  nfsdcld.service           loaded active running NFSv4 Client Tracking Daemon
+  pihole-FTL.service        loaded active running Pi-hole FTL
+  pmcd.service              loaded active running Performance Metrics Collector Daemon
+  pmie.service              loaded active running Performance Metrics Inference Engine
+  pmie_farm.service         loaded active running pmie farm service
+  pmproxy.service           loaded active running Proxy for Performance Metrics Collector Daemon
+  polkit.service            loaded active running Authorization Manager
+  rpc-statd.service         loaded active running NFS status monitor for NFSv2/3 locking.
+  rpcbind.service           loaded active running RPC bind portmap service
+  semaphore.service         loaded active running Semaphore Ansible UI
+  ssh.service               loaded active running OpenBSD Secure Shell server
+  systemd-journald.service  loaded active running Journal Service
+  systemd-machined.service  loaded active running Virtual Machine and Container Registration Service
+  systemd-timesyncd.service loaded active running Network Time Synchronization
+  systemd-udevd.service     loaded active running Rule-based Manager for Device Events and Files
+  udisks2.service           loaded active running Disk Manager
+  virtlogd.service          loaded active running libvirt logging daemon
+  wpa_supplicant.service    loaded active running WPA supplicant
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+30 loaded units listed.

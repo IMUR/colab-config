@@ -1,0 +1,10 @@
+/etc/ssl/certs/ca-certificates.crt
+/etc/ca-certificates.conf
+/etc/tmpfiles.d/tmp.conf
+/etc/subuid
+/etc/network/interfaces.d/lo
+/etc/network/interfaces.d/wlan0
+/etc/network/interfaces
+/etc/sudoers.d/crtr
+/etc/subgid-
+/etc/bash_completion.d/pihole
