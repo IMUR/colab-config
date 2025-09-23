@@ -363,7 +363,7 @@ alias claude-search='npx claude-code'  # Search-enabled version
 55. The following steps have been determined to be the correct and final approach to installing Claude:
     - Remove any existing `.claude` symlink in the home directory.
     - Clean the npm cache: `sudo npm cache clean --force`
-    - Globally uninstall claude-code: `sudo npm uninstall -g @anthropic-ai/claude-code`
+    - Globally uninstall claude-code: `sudo npm uninstall -g @anthropic-ai/claude-code@latest`
     - Install claude-code globally: `sudo npm install -g @anthropic-ai/claude-code@latest`
     - Run `claude migrate-installer`
     - Remove global installation: `sudo npm uninstall -g @anthropic-ai/claude-code`
@@ -383,6 +383,9 @@ alias claude-search='npx claude-code'  # Search-enabled version
 64. Disable NVM in ansible configurations.
 65. Update documentation to reflect system Node approach.
 66. If Claude search is not working on ARM64 systems, it may be a platform-specific limitation and should be noted.
+67. To enhance security, store sensitive tokens in environment files with restricted permissions (600).
+68. Configure MCP servers to use environment variables instead of hardcoded tokens.
+69. Add environment auto-loading to shell profiles for persistent token availability.
 
 ## CODING STANDARDS
 
@@ -404,7 +407,7 @@ alias claude-search='npx claude-code'  # Search-enabled version
 2.  Validate changes using appropriate testing commands.
 3.  Check system logs for errors.
 4.  Use `chezmoi diff` to preview changes before applying.
-5. When executing commands, ensure you are operating from the correct machine.
+5.  When executing commands, ensure you are operating from the correct machine.
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -576,6 +579,8 @@ The project implements a **hybrid configuration management strategy**:
 2.  Protect sensitive data using appropriate methods.
 3.  Regularly audit configurations for security vulnerabilities.
 4.  Minimize the use of `curl | sh` patterns; verify the integrity of downloaded scripts.
+5. To enhance security, store sensitive tokens in environment files with restricted permissions (600).
+6. Configure MCP servers to use environment variables instead of hardcoded tokens.
 
 ## TROUBLESHOOTING
 
@@ -610,8 +615,4 @@ When dealing with OAuth authentication in a headless terminal environment like `
 
 ### Claude Code Troubleshooting on ARM64 (Raspberry Pi 5)
 
-The following steps can be taken to resolve common issues with Claude Code on ARM64 systems like the Raspberry Pi 5:
-
-1. **Verify Node.js architecture**: Run `node -e "console.log(process.arch)"` to confirm it reports `arm64`
-2. **Use local agent directories**: Move agents from the shared NFS location to local `~/.claude/agents/` temporarily
-3. **Clean reinstall without NFS**: Uninstall completely, remove all `.claude/
+The following steps can be taken to resolve common
