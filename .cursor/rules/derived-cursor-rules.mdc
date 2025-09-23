@@ -502,19 +502,19 @@ This comprehensive index covers all documentation in the Co-lab cluster configur
 - **`omni-config/PLATONIC-NODE-GUIDE.md`** - Reference implementation guide for theoretical ideal state
 
 ### **Ansible Configuration**
-- **`system-ansible/README.md`** - Ansible playbooks documentation
-- **`system-ansible/playbooks/README.md`** - Playbook-specific documentation
-- **`system-ansible/group_vars/all/hardware_profiles.yml`** - Hardware configuration profiles
-- **`system-ansible/host_vars/cooperator/specific.yml`** - Node-specific configurations
+- **`ansible/README.md`** - Ansible playbooks documentation
+- **`ansible/playbooks/README.md`** - Playbook-specific documentation
+- **`ansible/group_vars/all/hardware_profiles.yml`** - Hardware configuration profiles
+- **`ansible/host_vars/cooperator/specific.yml`** - Node-specific configurations
 
 ### 🛠️ Implementation and Support Documentation
 
 ### **Scripts and Utilities**
-- **`deployment/scripts/README.md`** - Production scripts documentation
-- **`deployment/scripts/cli-tools-test.sh`** - CLI tools validation utility
-- **`deployment/scripts/sync-claude-configs.sh`** - Claude configuration synchronization
-- **`deployment/scripts/uv-cluster-migration.sh`** - UV package manager migration automation
-- **`deployment/scripts/update-docs.sh`** - Documentation maintenance utility
+- **`scripts/active/README.md`** - Production scripts documentation
+- **`scripts/active/cli-tools-test.sh`** - CLI tools validation utility
+- **`scripts/active/sync-claude-configs.sh`** - Claude configuration synchronization
+- **`scripts/active/uv-cluster-migration.sh`** - UV package manager migration automation
+- **`scripts/active/update-docs.sh`** - Documentation maintenance utility
 
 ### **Service Configuration**
 - **`services/README.md`** - Service configurations overview
@@ -615,4 +615,4 @@ When dealing with OAuth authentication in a headless terminal environment like `
 
 ### Claude Code Troubleshooting on ARM64 (Raspberry Pi 5)
 
-The following steps can be taken to resolve common
+The following steps can be taken to resolve common Claude Code issues on ARM64 systems

@@ -1,0 +1,7 @@
+/home/drtr/.config/zsh/backups/20250912-051750/.zshrc
+/home/drtr/.config/chezmoi/chezmoistate.boltdb
+/home/drtr/.config/chezmoi/chezmoi.toml
+/home/drtr/.config/ghostty/config
+/home/drtr/.config/starship.toml
+/home/drtr/.config/uv/uv-receipt.json
+/home/drtr/.config/fish/conf.d/uv.env.fish
