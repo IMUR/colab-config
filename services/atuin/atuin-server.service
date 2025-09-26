@@ -1,0 +1,19 @@
+[Unit]
+Description=Atuin Server - Shell History Sync
+After=network.target
+
+[Service]
+Type=simple
+User=crtr
+Group=crtr
+WorkingDirectory=/home/crtr
+Environment="ATUIN_HOST=192.168.254.10"
+Environment="ATUIN_PORT=8811"
+Environment="ATUIN_DB_URI=sqlite:///home/crtr/.local/share/atuin/server.db"
+Environment="RUST_LOG=atuin::api=info"
+ExecStart=/usr/local/bin/atuin server start
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
