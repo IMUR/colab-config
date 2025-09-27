@@ -1,0 +1,38 @@
+# Atuin Configuration
+# https://docs.atuin.sh/configuration/config/
+
+## Sync configuration
+sync_address = "http://192.168.254.10:8811"
+sync_frequency = "5m"
+auto_sync = true
+
+## Search configuration
+search_mode = "fuzzy"
+filter_mode = "global"
+filter_mode_shell_up_key_binding = "session"
+style = "compact"
+inline_height = 10
+show_preview = true
+show_help = true
+exit_mode = "return-query"
+
+## History configuration
+history_filter = [
+  "^secret",
+  "^pass",
+  "^export.*KEY",
+  "^export.*TOKEN",
+]
+
+## UI configuration
+show_tabs = false
+enter_accept = true
+
+## Shell integration
+{{- if eq .chezmoi.hostname "cooperator" }}
+# Cooperator is the atuin server - already logged in
+{{- else }}
+# Client nodes - need to login/register with:
+# atuin register -u {{ .chezmoi.hostname }} -e {{ .chezmoi.hostname }}@ism.la
+# atuin login -u {{ .chezmoi.hostname }}
+{{- end }}

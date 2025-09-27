@@ -262,6 +262,15 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 # ====================================================================
+# HISTORY SYSTEM - ATUIN
+# ====================================================================
+
+# Initialize Atuin if available (history replacement)
+if [[ $HAS_ATUIN == 1 ]]; then
+  eval "$(atuin init bash)"
+fi
+
+# ====================================================================
 # PERFORMANCE AND DEBUGGING
 # ====================================================================
 
