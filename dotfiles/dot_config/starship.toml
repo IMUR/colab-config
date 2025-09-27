@@ -1,0 +1,75 @@
+# Starship prompt configuration
+# Node-aware prompt for Co-lab cluster
+
+format = """
+[╭─](bold green)$username[@](bold yellow)$hostname [in ](bold white)$directory$git_branch$git_status$python$nodejs$docker_context
+[╰─](bold green)$character """
+
+[username]
+show_always = true
+style_user = "bold green"
+style_root = "bold red"
+format = "[$user]($style)"
+
+[hostname]
+ssh_only = false
+style = "bold yellow"
+format = "[$hostname]($style)"
+
+[directory]
+style = "bold cyan"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+style = "bold purple"
+symbol = " "
+format = " [$symbol$branch]($style)"
+
+[git_status]
+style = "bold red"
+format = "([$all_status$ahead_behind]($style))"
+
+[python]
+symbol = " "
+style = "bold yellow"
+format = " [$symbol$version]($style)"
+
+[nodejs]
+symbol = " "
+style = "bold green"
+format = " [$symbol$version]($style)"
+
+[docker_context]
+symbol = " "
+style = "bold blue"
+format = " [$symbol$context]($style)"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+[cmd_duration]
+min_time = 2_000
+format = " took [$duration](bold yellow)"
+
+[memory_usage]
+disabled = false
+threshold = 75
+symbol = " "
+style = "bold red"
+format = " [$symbol$ram_pct]($style)"
+
+[battery]
+full_symbol = ""
+charging_symbol = "⚡"
+discharging_symbol = "💀"
+
+[[battery.display]]
+threshold = 10
+style = "bold red"
+
+[time]
+disabled = false
+format = " [$time](bold white)"
+time_format = "%H:%M"

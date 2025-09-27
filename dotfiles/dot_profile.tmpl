@@ -1,0 +1,139 @@
+# Unified .profile for Co-lab Cluster - TEMPLATED VERSION
+# Single source of truth for PATH and environment variables
+# Works across all shells (bash, zsh, dash, sh) and SSH contexts
+# Managed by Chezmoi with node-specific templating
+
+# ====================================================================
+# NODE ENVIRONMENT DETECTION
+# ====================================================================
+
+# Node identification
+export NODE_ROLE="{{ .chezmoi.hostname }}"
+export ARCH="{{ .chezmoi.arch }}"
+export OS="{{ .chezmoi.os }}"
+
+# Node-specific variables from Chezmoi
+{{ if .node_role -}}
+export NODE_TYPE="{{ .node_role }}"
+{{ end -}}
+{{ if .has_gpu -}}
+export HAS_GPU="{{ .has_gpu }}"
+{{ end -}}
+
+# ====================================================================
+# UNIFIED PATH CONFIGURATION
+# ====================================================================
+
+# Function to safely add to PATH (avoids duplicates)
+add_to_path() {
+    case ":${PATH}:" in
+        *:"$1":*)
+            # Already in PATH
+            ;;
+        *)
+            # Add to PATH, prepending for priority
+            export PATH="$1:$PATH"
+            ;;
+    esac
+}
+
+# Base system paths (should already be in PATH from /etc/profile)
+# /usr/local/bin:/usr/bin:/bin:/usr/games
+
+# User-specific paths (highest priority)
+[ -d "$HOME/.local/bin" ] && add_to_path "$HOME/.local/bin"
+[ -d "$HOME/bin" ] && add_to_path "$HOME/bin"
+
+# Development tools
+[ -d "$HOME/.cargo/bin" ] && add_to_path "$HOME/.cargo/bin"
+[ -d "$HOME/.go/bin" ] && add_to_path "$HOME/.go/bin"
+
+# Node.js via NVM (if installed)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" --no-use  # Load nvm but don't use it yet
+
+{{ if .has_gpu -}}
+# GPU-specific paths and environment
+if [ -d "/usr/local/cuda/bin" ]; then
+    add_to_path "/usr/local/cuda/bin"
+    export CUDA_HOME="/usr/local/cuda"
+    export LD_LIBRARY_PATH="/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+fi
+{{ end }}
+
+# ====================================================================
+# CORE ENVIRONMENT VARIABLES
+# ====================================================================
+
+# Standard environment
+export EDITOR="${EDITOR:-vim}"
+export VISUAL="${VISUAL:-vim}"
+export PAGER="${PAGER:-less}"
+export LANG="${LANG:-en_US.UTF-8}"
+
+# Development
+export PYTHONDONTWRITEBYTECODE=1
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+
+# Node-specific environment
+{{ if eq .chezmoi.hostname "crtr" -}}
+# Gateway node specific
+export CLUSTER_GATEWAY=true
+export NFS_SERVER="192.168.254.10"
+{{ else if eq .chezmoi.hostname "prtr" -}}
+# Compute node specific
+export COMPUTE_NODE=true
+export GPU_COUNT=4
+{{ else if eq .chezmoi.hostname "drtr" -}}
+# ML platform specific
+export ML_PLATFORM=true
+export GPU_COUNT=1
+export JUPYTER_PORT=8888
+{{ end }}
+
+# ====================================================================
+# XDG BASE DIRECTORIES
+# ====================================================================
+
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+
+# ====================================================================
+# CLUSTER ENVIRONMENT
+# ====================================================================
+
+# Cluster paths
+export CLUSTER_CONFIG="$HOME/Projects/colab-config"
+export CLUSTER_SCRIPTS="$CLUSTER_CONFIG/scripts"
+
+# SSH Agent (if not already running)
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" >/dev/null 2>&1
+    # Add default keys if they exist
+    [ -f "$HOME/.ssh/id_ed25519" ] && ssh-add "$HOME/.ssh/id_ed25519" 2>/dev/null
+    [ -f "$HOME/.ssh/id_rsa" ] && ssh-add "$HOME/.ssh/id_rsa" 2>/dev/null
+fi
+
+# ====================================================================
+# SHELL-SPECIFIC SOURCING
+# ====================================================================
+
+# Source shell-specific configurations if they exist
+# This .profile is sourced by sh/dash/bash login shells
+# zsh sources .zprofile which can source this file
+
+# For bash: .bash_profile sources this, then .bashrc
+# For zsh: .zprofile sources this, then .zshrc
+# For sh/dash: This is the only config file
+
+# ====================================================================
+# LOCAL OVERRIDES
+# ====================================================================
+
+# Source local overrides if they exist (not tracked by git)
+[ -f "$HOME/.profile.local" ] && . "$HOME/.profile.local"
+
+# Clean up function
+unset -f add_to_path
