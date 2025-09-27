@@ -1,0 +1,419 @@
+# Projector Node Configuration Example
+# Node: projector (prtr)
+# Role: Multi-GPU Compute, Archon Host
+# Hardware: x86_64, 128GB RAM, 4x GPU
+
+---
+# Node identification
+node_name: projector
+hostname: projector.ism.la
+node_role: compute
+architecture: x86_64
+
+# Network configuration
+network:
+  interface: enp4s0
+  ip_address: 192.168.254.20
+  netmask: 255.255.255.0
+  gateway: 192.168.254.10
+  dns_servers:
+    - 192.168.254.10  # Cooperator (Pi-hole)
+    - 1.1.1.1         # Fallback
+
+# Hardware specifications
+hardware:
+  cpu: "Intel Core i7-10700K"
+  cores: 8
+  threads: 16
+  memory: "128GB DDR4"
+  storage: "2TB NVMe SSD"
+  gpu: true
+  gpu_count: 4
+  gpu_details:
+    - model: "NVIDIA GTX 1080"
+      memory: "8GB"
+      pci_slot: "01:00.0"
+    - model: "NVIDIA GTX 1080"
+      memory: "8GB"
+      pci_slot: "02:00.0"
+    - model: "NVIDIA GTX 970"
+      memory: "4GB"
+      pci_slot: "03:00.0"
+    - model: "NVIDIA GTX 970"
+      memory: "4GB"
+      pci_slot: "04:00.0"
+
+# GPU configuration
+gpu_config:
+  driver_version: "560.35.03"
+  cuda_version: "12.6"
+  cuda_home: "/usr/local/cuda"
+  nvidia_persistence: true
+  power_management: true
+  multi_gpu_optimization:
+    cuda_device_order: "PCI_BUS_ID"
+    nccl_settings:
+      debug: "INFO"
+      ib_disable: 1
+      p2p_disable: 0
+
+# Services configuration
+services:
+  # Archon Application Stack
+  archon:
+    enabled: true
+    type: "dual"  # Both containers and systemd service
+    containers:
+      - name: archon-server
+        image: archon-archon-server
+        port: 8181
+        gpu_access: true
+      - name: archon-mcp
+        image: archon-archon-mcp
+        port: 8051
+        gpu_access: true
+      - name: archon-agents
+        image: archon-archon-agents
+        port: 8052
+        gpu_access: true
+      - name: archon_postgres
+        image: pgvector/pgvector:pg16
+        port: 54322
+        volumes:
+          - archon-supabase_postgres_data:/var/lib/postgresql/data
+      - name: archon_postgrest
+        image: postgrest/postgrest:v12.2.0
+        port: 54321
+      - name: archon_adminer
+        image: adminer:4.8.1
+        port: 54323
+    systemd_service:
+      enabled: true
+      start_after_docker: true
+    data_volumes:
+      - archon-supabase_postgres_data
+    networks:
+      - archon_app-network
+      - archon_network
+
+  # Ollama LLM Service
+  ollama:
+    enabled: true
+    type: "systemd"
+    port: 11434
+    models_path: "/var/lib/ollama/models"
+    gpu_layers: -1  # Use all GPU layers
+    host: "0.0.0.0"
+    models:
+      - llama3.1:8b
+      - codellama:13b
+      - mistral:7b
+
+  # Docker service
+  docker:
+    enabled: true
+    version: "latest"
+    daemon_config:
+      storage_driver: "overlay2"
+      log_driver: "json-file"
+      log_opts:
+        max_size: "100m"
+        max_file: "3"
+      default_runtime: "nvidia"
+      runtimes:
+        nvidia:
+          path: "nvidia-container-runtime"
+    gpu_support: true
+    compose_version: "v2"
+
+  # SSH server
+  ssh:
+    enabled: true
+    port: 22
+    key_only: true
+    root_login: false
+    x11_forwarding: true
+
+  # NFS client
+  nfs_client:
+    enabled: true
+    mounts:
+      - source: "cooperator.ism.la:/cluster-nas"
+        target: "/cluster-nas"
+        type: "nfs4"
+        options: "defaults,_netdev"
+
+# Software packages
+packages:
+  system:
+    - nvidia-driver-560
+    - cuda-toolkit-12-6
+    - nvidia-container-toolkit
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-buildx-plugin
+    - docker-compose-plugin
+    - nfs-common
+
+  development:
+    - git
+    - vim
+    - tmux
+    - htop
+    - nvtop
+    - curl
+    - wget
+    - build-essential
+    - python3-dev
+    - python3-pip
+
+  gpu_tools:
+    - nvidia-cuda-dev
+    - nvidia-cuda-toolkit
+    - gpu-burn
+    - nvidia-ml-py3
+
+# User configuration
+users:
+  - name: prtr
+    uid: 1000
+    groups:
+      - sudo
+      - docker
+      - adm
+      - cluster
+    shell: /bin/zsh
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample..."
+
+# Storage configuration
+storage:
+  mount_points:
+    - device: /dev/nvme0n1p1
+      path: /
+      filesystem: ext4
+      options: defaults,noatime
+    - device: cooperator.ism.la:/cluster-nas
+      path: /cluster-nas
+      filesystem: nfs4
+      options: defaults,_netdev
+
+  docker_volumes:
+    - archon-supabase_postgres_data
+    - ollama-models
+
+# Environment variables
+environment:
+  CLUSTER_NODE: projector
+  NODE_ROLE: compute
+  NODE_IP: 192.168.254.20
+  HAS_GPU: true
+  GPU_COUNT: 4
+  CUDA_HOME: /usr/local/cuda
+  CUDA_VERSION: "12.6"
+  NVIDIA_VISIBLE_DEVICES: all
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility,graphics"
+  DOCKER_BUILDKIT: 1
+  DOCKER_DEFAULT_RUNTIME: nvidia
+
+# Chezmoi template variables
+template_data:
+  node_role: compute
+  has_gpu: true
+  gpu_count: 4
+  gpu_architecture: multi_gpu
+  has_cuda_runtime: true
+  has_cuda_toolkit: true
+  cuda_version: "12.6"
+  cuda_home: "/usr/local/cuda"
+  has_docker: true
+  has_nvidia_container: true
+  docker_gpu_support: true
+  has_archon_service: true
+  has_ollama_service: true
+  supports_vllm: true
+  supports_llama_cpp: true
+  supports_pytorch_cuda: true
+  cluster_member: true
+
+# Firewall configuration
+firewall:
+  enabled: true
+  default_policy: deny
+  rules:
+    # SSH access
+    - { port: 22, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Archon services
+    - { port: 8181, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    - { port: 8051, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    - { port: 8052, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Database services
+    - { port: 54321, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    - { port: 54322, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    - { port: 54323, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Ollama
+    - { port: 11434, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Cluster internal
+    - { protocol: any, source: "192.168.254.0/24", action: allow }
+
+# Performance tuning
+performance:
+  gpu:
+    persistence_mode: true
+    power_limit:
+      gtx_1080: 200  # Watts
+      gtx_970: 180   # Watts
+    memory_clock:
+      gtx_1080: 4004
+      gtx_970: 3505
+    graphics_clock:
+      gtx_1080: 1911
+      gtx_970: 1380
+
+  cpu:
+    governor: "performance"
+    turbo_boost: true
+
+  memory:
+    swappiness: 10
+    dirty_ratio: 15
+
+# Monitoring and logging
+monitoring:
+  gpu_monitoring:
+    enabled: true
+    interval: 60  # seconds
+    metrics:
+      - utilization
+      - memory_usage
+      - temperature
+      - power_consumption
+    log_file: "/var/log/gpu-metrics.csv"
+
+  container_monitoring:
+    enabled: true
+    tools:
+      - docker stats
+      - ctop
+    health_checks:
+      archon:
+        endpoints:
+          - "http://localhost:8181/health"
+          - "http://localhost:8051/health"
+          - "http://localhost:8052/health"
+        interval: 300  # seconds
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  targets:
+    - /etc/
+    - /home/
+    - /opt/archon/
+    - /var/lib/ollama/
+  exclude:
+    - /var/lib/docker/  # Too large, use volume backups
+  destination: /cluster-nas/backups/projector/
+
+  docker_backups:
+    schedule: "0 4 * * 0"  # Weekly on Sunday at 4 AM
+    images:
+      - archon-archon-server
+      - archon-archon-mcp
+      - archon-archon-agents
+    volumes:
+      - archon-supabase_postgres_data
+
+# Service dependencies
+dependencies:
+  critical:
+    - network
+    - storage
+    - nvidia-driver
+  services:
+    - docker
+    - nvidia-persistenced
+    - nfs-client.target
+  applications:
+    - archon (depends on docker)
+    - ollama (depends on nvidia)
+
+# Health checks and validation
+health_checks:
+  gpu:
+    command: "nvidia-smi"
+    expected_gpus: 4
+    interval: 300
+
+  docker:
+    command: "docker info"
+    gpu_runtime: true
+    interval: 600
+
+  archon:
+    endpoints:
+      - "http://localhost:8181/health"
+      - "http://localhost:8051/health"
+    interval: 180
+
+  storage:
+    mount_points:
+      - "/cluster-nas"
+    free_space_min: "10GB"
+    interval: 3600
+
+# Security configuration
+security:
+  nvidia_security:
+    mig_mode: false  # Not supported on GTX cards
+    compute_mode: "default"
+
+  container_security:
+    user_namespaces: false  # Disabled for GPU access
+    seccomp: true
+    apparmor: true
+
+# Maintenance schedules
+maintenance:
+  gpu_health_check:
+    schedule: "0 */6 * * *"  # Every 6 hours
+    actions:
+      - check_temperatures
+      - verify_memory
+      - test_compute_capability
+
+  container_cleanup:
+    schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+    actions:
+      - prune_stopped_containers
+      - prune_unused_images
+      - prune_unused_volumes
+
+  model_updates:
+    schedule: "0 5 * * 0"  # Weekly on Sunday at 5 AM
+    actions:
+      - update_ollama_models
+      - cleanup_old_model_versions
+
+# Notes and documentation
+notes: |
+  Projector serves as the primary compute node with multi-GPU capabilities:
+
+  - Hosts Archon application stack (both containers and systemd service)
+  - Runs Ollama for local LLM inference
+  - Provides high-performance computing for ML workloads
+  - Multi-GPU setup optimized for distributed computing
+
+  GPU Configuration:
+  - 2x GTX 1080 (8GB each) - Primary compute
+  - 2x GTX 970 (4GB each) - Secondary compute
+  - CUDA 12.6 with latest drivers
+  - Optimized for inference workloads
+
+  Critical Services:
+  - Archon: Dual deployment (containers + systemd)
+  - Ollama: GPU-accelerated LLM serving
+  - Docker: GPU runtime enabled
+  - NFS client: Cluster storage access

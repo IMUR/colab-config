@@ -1,0 +1,44 @@
+{
+  "directory_type": "technical_reference",
+  "primary_tool": "reference_documentation",
+  "purpose": "command_and_technical_specifications",
+  "safety_level": "medium",
+  "operational_constraints": {
+    "safe_operations": [
+      "reference_documentation_reading",
+      "command_syntax_explanation",
+      "variable_documentation",
+      "template_pattern_explanation",
+      "cross_reference_validation"
+    ],
+    "restricted_operations": [
+      "command_execution",
+      "variable_modification",
+      "template_changes",
+      "reference_structure_changes"
+    ],
+    "required_validations": [
+      "command_syntax_accuracy",
+      "variable_documentation_consistency",
+      "cross_reference_validation"
+    ]
+  },
+  "reference_categories": {
+    "commands": "complete_command_reference_with_examples",
+    "variables": "configuration_variables_and_template_parameters",
+    "templates": "chezmoi_template_patterns_and_syntax",
+    "documentation_index": "navigation_and_discovery_guide"
+  },
+  "technical_domains": {
+    "cluster_commands": ["ssh", "ansible", "chezmoi", "systemctl"],
+    "configuration_variables": ["node_specific", "universal", "template_variables"],
+    "template_patterns": ["conditional_logic", "node_detection", "service_configuration"],
+    "navigation_systems": ["cross_references", "discovery_paths", "content_organization"]
+  },
+  "dependencies": {
+    "architecture_specs": "../architecture/",
+    "implementation_guides": "../guides/",
+    "practical_examples": "../examples/",
+    "validation_tools": "../../scripts/validation/"
+  }
+}

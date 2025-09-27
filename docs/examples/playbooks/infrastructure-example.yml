@@ -1,0 +1,504 @@
+---
+# Infrastructure Example Playbook
+# Purpose: Example of minimal system-level configuration using Ansible
+# Scope: Package installation, system services, /etc/ configurations only
+# Usage: ansible-playbook -i inventory/hosts.yml infrastructure-example.yml
+
+- name: Minimal System Infrastructure Configuration
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    # Cluster-wide configuration
+    cluster_domain: "ism.la"
+    cluster_subnet: "192.168.254.0/24"
+    nfs_server: "192.168.254.10"
+    dns_server: "192.168.254.10"
+
+    # Package lists
+    common_packages:
+      - curl
+      - wget
+      - git
+      - vim
+      - tmux
+      - htop
+      - unzip
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+
+    development_packages:
+      - build-essential
+      - python3-dev
+      - python3-pip
+      - nodejs
+      - npm
+
+    monitoring_packages:
+      - fail2ban
+      - ufw
+      - logrotate
+
+  pre_tasks:
+    - name: Update package cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      tags: [always]
+
+    - name: Gather service facts
+      service_facts:
+      tags: [always]
+
+  tasks:
+    # Common system packages
+    - name: Install common system packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+      tags: [packages, common]
+
+    - name: Install development packages
+      apt:
+        name: "{{ development_packages }}"
+        state: present
+      when: "'compute' in group_names or 'ml_platform' in group_names"
+      tags: [packages, development]
+
+    - name: Install monitoring packages
+      apt:
+        name: "{{ monitoring_packages }}"
+        state: present
+      tags: [packages, monitoring]
+
+    # System configuration
+    - name: Configure timezone
+      timezone:
+        name: UTC
+      tags: [system]
+
+    - name: Set hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+      tags: [system]
+
+    - name: Update /etc/hosts with cluster nodes
+      blockinfile:
+        path: /etc/hosts
+        block: |
+          # Cluster nodes
+          192.168.254.10 cooperator.{{ cluster_domain }} cooperator
+          192.168.254.20 projector.{{ cluster_domain }} projector
+          192.168.254.30 director.{{ cluster_domain }} director
+        marker: "# {mark} ANSIBLE MANAGED CLUSTER HOSTS"
+      tags: [system, network]
+
+    # User management
+    - name: Create cluster group
+      group:
+        name: cluster
+        gid: 2000
+        state: present
+      tags: [users]
+
+    - name: Ensure primary user exists with correct UID
+      user:
+        name: prtr
+        uid: "{{ '1001' if inventory_hostname == 'cooperator' else '1000' }}"
+        groups:
+          - sudo
+          - cluster
+        shell: /bin/bash
+        create_home: true
+        state: present
+      tags: [users]
+
+    # SSH configuration
+    - name: Configure SSH security
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: true
+      loop:
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+        - { regexp: '^#?X11Forwarding', line: 'X11Forwarding yes' }
+      notify: restart ssh
+      tags: [ssh, security]
+
+    # Firewall basic setup
+    - name: Configure UFW defaults
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+      tags: [firewall]
+
+    - name: Allow SSH
+      ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+      tags: [firewall]
+
+    - name: Allow cluster internal traffic
+      ufw:
+        rule: allow
+        src: "{{ cluster_subnet }}"
+      tags: [firewall]
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+      tags: [firewall]
+
+    # Fail2ban configuration
+    - name: Configure fail2ban for SSH
+      copy:
+        content: |
+          [sshd]
+          enabled = true
+          port = ssh
+          filter = sshd
+          logpath = /var/log/auth.log
+          maxretry = 3
+          bantime = 3600
+          findtime = 600
+        dest: /etc/fail2ban/jail.d/sshd.conf
+        backup: true
+      notify: restart fail2ban
+      tags: [security, fail2ban]
+
+    # System limits
+    - name: Set system limits
+      pam_limits:
+        domain: '*'
+        limit_type: "{{ item.type }}"
+        limit_item: "{{ item.item }}"
+        value: "{{ item.value }}"
+      loop:
+        - { type: 'soft', item: 'nofile', value: '65536' }
+        - { type: 'hard', item: 'nofile', value: '65536' }
+        - { type: 'soft', item: 'nproc', value: '65536' }
+        - { type: 'hard', item: 'nproc', value: '65536' }
+      tags: [system, limits]
+
+    # Log rotation
+    - name: Configure logrotate for application logs
+      copy:
+        content: |
+          /var/log/cluster/*.log {
+              daily
+              missingok
+              rotate 30
+              compress
+              delaycompress
+              notifempty
+              create 644 root root
+          }
+        dest: /etc/logrotate.d/cluster
+      tags: [logging]
+
+    # System monitoring
+    - name: Create monitoring script
+      copy:
+        content: |
+          #!/bin/bash
+          # Basic system monitoring script
+
+          LOG_FILE="/var/log/cluster/system-monitor.log"
+          DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
+          # Ensure log directory exists
+          mkdir -p /var/log/cluster
+
+          # System metrics
+          CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+          MEM_USAGE=$(free | grep '^Mem' | awk '{print ($3/$2) * 100.0}')
+          DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+          LOAD_AVG=$(uptime | awk -F'load average:' '{print $2}')
+
+          # Log metrics
+          echo "[$DATE] CPU: ${CPU_USAGE}%, Memory: ${MEM_USAGE}%, Disk: ${DISK_USAGE}%, Load: ${LOAD_AVG}" >> $LOG_FILE
+        dest: /usr/local/bin/system-monitor.sh
+        mode: '0755'
+      tags: [monitoring]
+
+    - name: Create systemd timer for monitoring
+      copy:
+        content: |
+          [Unit]
+          Description=System Monitor Timer
+
+          [Timer]
+          OnCalendar=*:0/5
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+        dest: /etc/systemd/system/system-monitor.timer
+      tags: [monitoring]
+
+    - name: Create systemd service for monitoring
+      copy:
+        content: |
+          [Unit]
+          Description=System Monitor
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/system-monitor.sh
+        dest: /etc/systemd/system/system-monitor.service
+      notify: reload systemd
+      tags: [monitoring]
+
+# Gateway-specific configuration
+- name: Gateway Node Configuration
+  hosts: gateway
+  become: true
+
+  vars:
+    gateway_packages:
+      - nfs-kernel-server
+      - rpcbind
+      - dnsmasq  # Alternative to Pi-hole for this example
+
+  tasks:
+    - name: Install gateway-specific packages
+      apt:
+        name: "{{ gateway_packages }}"
+        state: present
+      tags: [packages, gateway]
+
+    - name: Configure NFS exports
+      lineinfile:
+        path: /etc/exports
+        line: "/cluster-nas {{ cluster_subnet }}(rw,sync,no_subtree_check,no_root_squash)"
+        create: true
+        backup: true
+      notify: restart nfs-kernel-server
+      tags: [nfs, gateway]
+
+    - name: Create NFS export directory
+      file:
+        path: /cluster-nas
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+      tags: [nfs, gateway]
+
+    - name: Configure dnsmasq for local domain
+      copy:
+        content: |
+          # Cluster DNS configuration
+          domain-needed
+          bogus-priv
+          no-resolv
+          server=1.1.1.1
+          server=8.8.8.8
+          local=/{{ cluster_domain }}/
+          domain={{ cluster_domain }}
+
+          # Cluster hosts
+          address=/cooperator.{{ cluster_domain }}/192.168.254.10
+          address=/projector.{{ cluster_domain }}/192.168.254.20
+          address=/director.{{ cluster_domain }}/192.168.254.30
+        dest: /etc/dnsmasq.d/cluster.conf
+        backup: true
+      notify: restart dnsmasq
+      tags: [dns, gateway]
+
+    - name: Allow NFS ports through firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        src: "{{ cluster_subnet }}"
+      loop:
+        - '2049'  # NFS
+        - '111'   # RPC
+      tags: [firewall, gateway]
+
+    - name: Allow DNS port through firewall
+      ufw:
+        rule: allow
+        port: '53'
+        src: "{{ cluster_subnet }}"
+      tags: [firewall, gateway]
+
+# GPU nodes configuration
+- name: GPU Nodes Configuration
+  hosts: gpu_nodes
+  become: true
+
+  vars:
+    gpu_packages:
+      - nvidia-driver-560
+      - nvidia-utils-560
+      - nvidia-settings
+
+  tasks:
+    - name: Install NVIDIA drivers (basic)
+      apt:
+        name: "{{ gpu_packages }}"
+        state: present
+      tags: [packages, gpu]
+      # Note: Full GPU setup handled by specialized procedures
+
+    - name: Enable NVIDIA persistence service
+      systemd:
+        name: nvidia-persistenced
+        enabled: true
+        state: started
+      tags: [gpu, services]
+
+# Compute nodes configuration
+- name: Compute Nodes Configuration
+  hosts: compute
+  become: true
+
+  vars:
+    compute_packages:
+      - docker.io
+      - docker-compose
+
+  tasks:
+    - name: Install container runtime
+      apt:
+        name: "{{ compute_packages }}"
+        state: present
+      tags: [packages, compute]
+
+    - name: Add user to docker group
+      user:
+        name: prtr
+        groups: docker
+        append: true
+      tags: [docker, users]
+
+    - name: Enable Docker service
+      systemd:
+        name: docker
+        enabled: true
+        state: started
+      tags: [docker, services]
+
+    - name: Configure NFS client mount
+      mount:
+        path: /cluster-nas
+        src: "{{ nfs_server }}:/cluster-nas"
+        fstype: nfs4
+        opts: defaults,_netdev
+        state: mounted
+      tags: [nfs, storage]
+
+  handlers:
+    - name: restart ssh
+      systemd:
+        name: ssh
+        state: restarted
+
+    - name: restart fail2ban
+      systemd:
+        name: fail2ban
+        state: restarted
+
+    - name: restart nfs-kernel-server
+      systemd:
+        name: nfs-kernel-server
+        state: restarted
+
+    - name: restart dnsmasq
+      systemd:
+        name: dnsmasq
+        state: restarted
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: true
+
+# Post-configuration validation
+- name: Validation and Health Checks
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Verify SSH configuration
+      command: sshd -t
+      changed_when: false
+      tags: [validation, ssh]
+
+    - name: Check firewall status
+      command: ufw status
+      register: ufw_status
+      changed_when: false
+      tags: [validation, firewall]
+
+    - name: Display firewall status
+      debug:
+        var: ufw_status.stdout_lines
+      tags: [validation, firewall]
+
+    - name: Test cluster connectivity
+      wait_for:
+        host: "{{ item }}.{{ cluster_domain }}"
+        port: 22
+        timeout: 10
+      loop:
+        - cooperator
+        - projector
+        - director
+      when: item != inventory_hostname
+      tags: [validation, connectivity]
+
+    - name: Verify NFS mount (clients)
+      command: mountpoint /cluster-nas
+      changed_when: false
+      when: inventory_hostname != 'cooperator'
+      tags: [validation, nfs]
+
+    - name: Check system services
+      systemd:
+        name: "{{ item }}"
+        state: started
+      check_mode: true
+      loop:
+        - ssh
+        - fail2ban
+        - ufw
+      tags: [validation, services]
+
+    - name: Final system status
+      debug:
+        msg: |
+          System configuration complete for {{ inventory_hostname }}
+          Node role: {{ group_names[0] if group_names else 'unknown' }}
+          IP address: {{ ansible_default_ipv4.address }}
+          Services configured: SSH, Firewall, Fail2ban, Monitoring
+          {% if inventory_hostname == 'cooperator' %}
+          Gateway services: NFS server, DNS server
+          {% endif %}
+          {% if 'gpu_nodes' in group_names %}
+          GPU services: NVIDIA drivers, persistence daemon
+          {% endif %}
+          {% if 'compute' in group_names %}
+          Compute services: Docker runtime, NFS client
+          {% endif %}
+      tags: [validation, summary]
+
+# Notes about this playbook:
+# 1. This is a MINIMAL example - real implementations would be more comprehensive
+# 2. Focuses on system-level configuration only (packages, services, /etc/ files)
+# 3. User-level configuration (dotfiles, aliases) is handled by Chezmoi
+# 4. GPU and Docker detailed setup is handled by specialized procedures
+# 5. Uses safe, idempotent operations suitable for production
+# 6. Includes validation and health checks
+# 7. Follows the hybrid approach principles (system vs user separation)

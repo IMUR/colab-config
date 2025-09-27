@@ -1,0 +1,49 @@
+{
+  "directory_type": "configuration_examples",
+  "primary_tool": "example_documentation",
+  "purpose": "practical_configuration_examples_and_patterns",
+  "safety_level": "medium",
+  "operational_constraints": {
+    "safe_operations": [
+      "example_documentation_reading",
+      "pattern_analysis",
+      "configuration_explanation",
+      "example_validation",
+      "template_pattern_demonstration"
+    ],
+    "restricted_operations": [
+      "example_execution",
+      "configuration_deployment",
+      "template_modification",
+      "system_configuration_changes"
+    ],
+    "required_validations": [
+      "example_syntax_validation",
+      "configuration_consistency",
+      "template_syntax_verification"
+    ]
+  },
+  "example_categories": {
+    "node_configs": "node_specific_configuration_examples",
+    "playbooks": "ansible_playbook_patterns_and_examples",
+    "templates": "chezmoi_template_examples_and_patterns"
+  },
+  "practical_examples": {
+    "cooperator": "gateway_nfs_dns_proxy_configuration",
+    "projector": "multi_gpu_compute_optimization",
+    "director": "ml_platform_single_gpu_configuration",
+    "playbook_patterns": "infrastructure_automation_examples",
+    "template_patterns": "node_specific_templating_examples"
+  },
+  "validation_requirements": {
+    "ansible_examples": "ansible-playbook --syntax-check",
+    "chezmoi_templates": "chezmoi execute-template --dry-run",
+    "configuration_files": "yaml_syntax_validation"
+  },
+  "dependencies": {
+    "architecture_specs": "../architecture/",
+    "implementation_procedures": "../guides/",
+    "technical_references": "../reference/",
+    "actual_configurations": "../../dotfiles/"
+  }
+}

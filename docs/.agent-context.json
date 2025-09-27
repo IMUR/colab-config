@@ -1,0 +1,52 @@
+{
+  "directory_type": "comprehensive_documentation",
+  "primary_tool": "documentation_management",
+  "purpose": "complete_cluster_infrastructure_documentation",
+  "safety_level": "medium",
+  "operational_constraints": {
+    "safe_operations": [
+      "documentation_reading",
+      "content_analysis",
+      "link_validation",
+      "documentation_updates",
+      "cross_reference_checking",
+      "content_enhancement",
+      "example_creation"
+    ],
+    "restricted_operations": [
+      "structural_reorganization",
+      "bulk_content_deletion",
+      "directory_structure_changes",
+      "archive_modification"
+    ],
+    "required_validations": [
+      "yaml_frontmatter_syntax",
+      "markdown_link_validation",
+      "cross_reference_consistency"
+    ]
+  },
+  "common_patterns": {
+    "content_update_workflow": "read_existing → analyze_changes → update_content → validate_links",
+    "new_content_creation": "follow_template → add_yaml_frontmatter → create_cross_references → validate_structure",
+    "safety_checks": ["preserve_existing_links", "maintain_navigation_consistency", "validate_yaml_syntax"]
+  },
+  "dependencies": {
+    "template_source": "directory-meta-documentation-guide.md",
+    "structure_guide": "colab-config-structure-guide.md",
+    "validation_tools": ["yamllint", "markdown-link-check"],
+    "reference_files": ["structure.yaml", "README.md"]
+  },
+  "escalation_triggers": [
+    "structural_reorganization_request",
+    "bulk_content_deletion",
+    "archive_modification_request",
+    "yaml_syntax_errors"
+  ],
+  "content_categories": {
+    "architecture": "system_design_and_strategic_documentation",
+    "guides": "step_by_step_implementation_procedures",
+    "reference": "technical_specifications_and_commands",
+    "examples": "practical_configurations_and_working_code",
+    "archive": "historical_decisions_and_migrations"
+  }
+}
