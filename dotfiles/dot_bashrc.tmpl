@@ -1,0 +1,76 @@
+# ~/.bashrc - Bash configuration
+# Managed by Chezmoi for {{ .chezmoi.hostname }}
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+
+# User specific environment
+export EDITOR=vim
+export VISUAL=vim
+export PAGER=less
+
+# History configuration
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoreboth:erasedups
+shopt -s histappend
+
+# Prompt customization
+{{ if eq .chezmoi.hostname "crtr" }}
+# Gateway node prompt (green)
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+{{ else if eq .chezmoi.hostname "prtr" }}
+# Compute node prompt (yellow)
+PS1='\[\033[01;33m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+{{ else if eq .chezmoi.hostname "drtr" }}
+# ML platform prompt (magenta)
+PS1='\[\033[01;35m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+{{ else }}
+# Default prompt
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+{{ end }}
+
+# Aliases
+alias ls='ls --color=auto'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias grep='grep --color=auto'
+alias df='df -h'
+alias free='free -h'
+
+# Node-specific configurations
+{{ if eq .chezmoi.hostname "crtr" }}
+# Gateway node specific
+alias cluster-status='ansible all -m ping'
+alias nfs-mounts='showmount -e localhost'
+{{ else if eq .chezmoi.hostname "prtr" }}
+# Compute node specific
+alias gpu-status='nvidia-smi'
+alias cuda-version='nvcc --version'
+{{ else if eq .chezmoi.hostname "drtr" }}
+# ML platform specific
+alias jupyter-start='jupyter lab --ip=0.0.0.0'
+alias python='python3'
+{{ end }}
+
+# Cluster navigation shortcuts
+alias go-config='cd ~/Projects/colab-config'
+alias go-services='cd ~/Projects/colab-config/services'
+
+# Safety aliases
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+# Custom functions
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Source local overrides if they exist
+if [ -f ~/.bashrc.local ]; then
+    . ~/.bashrc.local
+fi

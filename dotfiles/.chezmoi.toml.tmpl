@@ -1,0 +1,58 @@
+# Chezmoi configuration with node detection
+# This file is processed first to set variables for all templates
+
+{{- $hostname := .chezmoi.hostname -}}
+{{- $email := promptStringOnce . "email" "Email address" -}}
+{{- $name := promptStringOnce . "name" "Full name" -}}
+
+[data]
+    email = {{ $email | quote }}
+    name = {{ $name | quote }}
+    hostname = {{ $hostname | quote }}
+
+    # Node-specific variables
+    {{- if eq $hostname "crtr" }}
+    node_role = "gateway"
+    node_color = "green"
+    has_gpu = false
+    is_gateway = true
+    nfs_server = true
+    {{- else if eq $hostname "prtr" }}
+    node_role = "compute"
+    node_color = "yellow"
+    has_gpu = true
+    gpu_count = 4
+    is_compute = true
+    {{- else if eq $hostname "drtr" }}
+    node_role = "ml_platform"
+    node_color = "magenta"
+    has_gpu = true
+    gpu_count = 1
+    is_ml_platform = true
+    {{- else }}
+    node_role = "unknown"
+    node_color = "default"
+    has_gpu = false
+    {{- end }}
+
+    # Cluster configuration
+    cluster_name = "colab"
+    cluster_domain = "local"
+    cluster_network = "192.168.254.0/24"
+
+    # Service URLs (if applicable)
+    {{- if eq $hostname "crtr" }}
+    semaphore_url = "http://192.168.254.10:3000"
+    prometheus_url = "http://192.168.254.10:9090"
+    grafana_url = "http://192.168.254.10:3001"
+    {{- end }}
+
+# Chezmoi behavior configuration
+[edit]
+    command = "vim"
+
+[merge]
+    command = "vimdiff"
+
+[diff]
+    pager = "less"
