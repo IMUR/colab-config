@@ -181,3 +181,34 @@ fi
 ```
 
 This repository prioritizes operational safety and consistency across the 3-node cluster while maintaining flexibility for node-specific optimizations.
+
+## Known Issues & Inconsistencies
+
+### Documentation/Metadata Alignment Issues
+⚠️ **Important**: Some metadata files reference a more ambitious structure than currently implemented:
+
+**`structure.yaml` References Non-Existent Files:**
+- `scripts/validation/check-dotfiles.sh`, `check-ansible.sh`, `check-services.sh`
+- `scripts/deployment/` and `scripts/setup/` directories
+- `.meta/workflows/` and `.meta/validation/` directories
+- `ansible/.agent-context.json`, `services/.agent-context.json`
+- `services/DEPLOYMENT.md`
+
+**Missing `.agent-context.json` Files:**
+- `ansible/.agent-context.json` - Referenced but doesn't exist
+- `services/.agent-context.json` - Referenced but doesn't exist
+- `scripts/.agent-context.json` - Referenced but doesn't exist
+
+**Actual Current Structure:**
+- Scripts: Only `scripts/testing/` and `scripts/validation/` exist
+- Validation: Only `scripts/validation/full-validation.sh` exists
+- Meta: Only `.meta/schemas/` exists
+
+### Working vs. Documented Architecture
+The repository **works perfectly** but documentation suggests more complex validation infrastructure than exists. When working with this repository:
+
+1. **Use actual files, not documented references**
+2. **Trust the working implementation over ambitious metadata**
+3. **Create missing files if needed, or update documentation to match reality**
+
+This is a result of aggressive cleanup that removed implementation while leaving aspirational documentation. The core functionality (Chezmoi, Ansible, Docker Compose) works perfectly.
