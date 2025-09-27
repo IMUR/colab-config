@@ -1,0 +1,94 @@
+{
+  "directory_type": "system_automation",
+  "management_tool": "ansible",
+  "purpose": "Minimal system configuration with maximum safety",
+  "safety_level": "critical",
+
+  "scope": {
+    "allowed": [
+      "ssh_key_distribution",
+      "basic_package_installation",
+      "user_group_management",
+      "essential_system_config"
+    ],
+    "prohibited": [
+      "kernel_modification",
+      "network_reconfiguration",
+      "service_disruption",
+      "security_changes"
+    ]
+  },
+
+  "operational_constraints": {
+    "mandatory_checks": [
+      "ansible-playbook --syntax-check",
+      "ansible-playbook --check",
+      "ansible-inventory --list --yaml"
+    ],
+    "approval_required": [
+      "production_execution",
+      "system_modification",
+      "service_configuration"
+    ],
+    "validation_gates": {
+      "pre_execution": ["syntax", "inventory", "dry_run"],
+      "post_execution": ["health_check", "rollback_ready"]
+    }
+  },
+
+  "playbook_guidelines": {
+    "structure": {
+      "required_fields": ["name", "hosts", "become", "tasks"],
+      "safety_headers": ["check_mode: yes", "diff: yes", "any_errors_fatal: yes"]
+    },
+    "best_practices": [
+      "Always include task names",
+      "Use when conditions for safety",
+      "Implement rollback tasks",
+      "Document dangerous operations"
+    ]
+  },
+
+  "inventory_structure": {
+    "groups": {
+      "colab": "All cluster nodes",
+      "gateway": "Gateway services (crtr)",
+      "compute": "Compute nodes (prtr)",
+      "ml_platform": "ML nodes (drtr)"
+    },
+    "variables": {
+      "group_vars": "Group-specific settings",
+      "host_vars": "Node-specific overrides"
+    }
+  },
+
+  "safe_modules": [
+    "ping",
+    "setup",
+    "debug",
+    "assert",
+    "fail"
+  ],
+
+  "restricted_modules": [
+    "shell",
+    "command",
+    "raw",
+    "script",
+    "systemd"
+  ],
+
+  "validation_commands": {
+    "syntax": "ansible-playbook --syntax-check playbooks/*.yml",
+    "inventory": "ansible-inventory --graph",
+    "connectivity": "ansible all -m ping",
+    "dry_run": "ansible-playbook --check --diff playbooks/PLAYBOOK.yml"
+  },
+
+  "escalation_required": [
+    "System file modification",
+    "Service restart or reload",
+    "User permission changes",
+    "Network configuration"
+  ]
+}
