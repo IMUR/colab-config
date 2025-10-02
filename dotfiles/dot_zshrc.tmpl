@@ -1,287 +1,288 @@
-# ~/.zshrc - Zsh configuration
-# Managed by Chezmoi with node-specific templating
-# Node: {{ .chezmoi.hostname }}
+# Modern ZSH Configuration - Unified Cluster Foundation
+# Designed for cluster environments with cross-arch compatibility
+
+# Performance: Start timing for optimization
+zmodload zsh/datetime
+_shell_start_time=$EPOCHREALTIME
 
 # ====================================================================
-# INSTANT PROMPT (Must be at the top)
+# CRITICAL: Source .profile FIRST (Foundation Layer)
 # ====================================================================
+# This ensures we get all environment variables, PATH, and tool detection
+# before any interactive shell setup begins
 
-# Enable Powerlevel10k instant prompt if available
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
+emulate sh -c 'source ~/.profile'
 
-# ====================================================================
-# OH-MY-ZSH CONFIGURATION
-# ====================================================================
-
-# Path to oh-my-zsh installation
-export ZSH="$HOME/.oh-my-zsh"
-
-# Theme selection (node-specific if desired)
-{{ if eq .chezmoi.hostname "crtr" -}}
-ZSH_THEME="robbyrussell"  # Simple for gateway
-{{ else if eq .chezmoi.hostname "prtr" -}}
-ZSH_THEME="agnoster"      # Detailed for compute
-{{ else if eq .chezmoi.hostname "drtr" -}}
-ZSH_THEME="powerlevel10k/powerlevel10k"  # Rich for ML platform
-{{ else -}}
-ZSH_THEME="robbyrussell"
-{{ end }}
-
-# Oh-My-Zsh settings
-CASE_SENSITIVE="false"
-HYPHEN_INSENSITIVE="true"
-DISABLE_AUTO_UPDATE="false"
-DISABLE_UPDATE_PROMPT="true"
-export UPDATE_ZSH_DAYS=13
-DISABLE_LS_COLORS="false"
-DISABLE_AUTO_TITLE="false"
-ENABLE_CORRECTION="false"
-COMPLETION_WAITING_DOTS="true"
-DISABLE_UNTRACKED_FILES_DIRTY="false"
-HIST_STAMPS="yyyy-mm-dd"
-
-# Plugins (node-aware selection)
-plugins=(
-    git
-    docker
-    docker-compose
-    kubectl
-    terraform
-    ansible
-    command-not-found
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    history-substring-search
-    {{ if .has_gpu -}}
-    # GPU-related plugins
-    python
-    pip
-    virtualenv
-    {{ end -}}
-    {{ if eq .chezmoi.hostname "crtr" -}}
-    # Gateway specific
-    systemd
-    nmap
-    {{ end -}}
-)
-
-# Load Oh-My-Zsh
-source $ZSH/oh-my-zsh.sh
+# Now we have: NODE_TYPE, NODE_ROLE, HAS_*, PATH, NVM_DIR, etc.
+# from our templated .profile foundation
 
 # ====================================================================
-# USER CONFIGURATION
+# MODERN TOOL AVAILABILITY CHECKS
+# ====================================================================
+
+# Function to check if command exists (defined locally for zsh)
+_has() { command -v "$1" >/dev/null 2>&1; }
+
+# Tool availability flags are now set in ~/.profile
+# This ensures consistency across all shells and SSH contexts
+
+# ====================================================================
+# ZSH OPTIONS - PRODUCTIVITY FOCUSED
 # ====================================================================
 
 # History configuration
-HISTFILE="$HOME/.zsh_history"
+HISTFILE=~/.zsh_history
 HISTSIZE=50000
 SAVEHIST=50000
-setopt EXTENDED_HISTORY
-setopt HIST_EXPIRE_DUPS_FIRST
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_SPACE
-setopt HIST_VERIFY
-setopt INC_APPEND_HISTORY
-setopt SHARE_HISTORY
+
+setopt HIST_IGNORE_DUPS      # Don't record duplicate entries
+setopt HIST_IGNORE_ALL_DUPS  # Delete old duplicate entries
+setopt HIST_FIND_NO_DUPS     # Don't display duplicates during search
+setopt HIST_SAVE_NO_DUPS     # Don't save duplicates
+setopt HIST_VERIFY           # Verify history expansions
+setopt SHARE_HISTORY         # Share history between sessions
+setopt APPEND_HISTORY        # Append to history file
+setopt INC_APPEND_HISTORY    # Append immediately, not on exit
 
 # Directory navigation
-setopt AUTO_CD
-setopt AUTO_PUSHD
-setopt PUSHD_IGNORE_DUPS
-setopt PUSHDMINUS
-setopt CDABLE_VARS
+setopt AUTO_CD               # Auto cd when typing directory name
+setopt AUTO_PUSHD            # Push directories to stack
+setopt PUSHD_IGNORE_DUPS     # Don't push duplicates
+setopt PUSHD_SILENT          # Don't print directory stack
 
 # Completion
-setopt COMPLETE_IN_WORD
-setopt ALWAYS_TO_END
-setopt PATH_DIRS
-setopt AUTO_MENU
-setopt AUTO_LIST
-setopt AUTO_PARAM_SLASH
-setopt EXTENDED_GLOB
-unsetopt MENU_COMPLETE
-unsetopt FLOW_CONTROL
+setopt AUTO_MENU             # Show menu on tab
+setopt COMPLETE_IN_WORD      # Complete from both ends
+setopt ALWAYS_TO_END         # Move cursor to end after completion
+
+# Globbing
+setopt EXTENDED_GLOB         # Enable extended globbing
+setopt NULL_GLOB             # Remove non-matching globs
 
 # ====================================================================
-# KEY BINDINGS
+# MODERN ALIASES - ENHANCED PRODUCTIVITY
 # ====================================================================
 
-# Use emacs key bindings
-bindkey -e
-
-# History search
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
-bindkey '^P' history-substring-search-up
-bindkey '^N' history-substring-search-down
-
-# Word navigation
-bindkey '^[[1;5C' forward-word  # Ctrl+Right
-bindkey '^[[1;5D' backward-word # Ctrl+Left
-
-# ====================================================================
-# ALIASES
-# ====================================================================
-
-# Standard aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias grep='grep --color=auto'
-alias df='df -h'
-alias free='free -h'
-alias top='htop'
-
-# Git aliases
-alias gs='git status'
-alias ga='git add'
-alias gc='git commit'
-alias gp='git push'
-alias gl='git log --oneline --graph'
-alias gd='git diff'
-
-# Cluster navigation
-alias go-config='cd ~/Projects/colab-config'
-alias go-services='cd ~/Projects/colab-config/services'
-alias go-ansible='cd ~/Projects/colab-config/ansible'
-
-# Node-specific aliases
-{{ if eq .chezmoi.hostname "crtr" -}}
-# Gateway aliases
-alias cluster-health='ansible all -m ping'
-alias show-mounts='showmount -e localhost'
-alias service-status='docker ps'
-{{ else if eq .chezmoi.hostname "prtr" -}}
-# Compute aliases
-alias gpu-status='nvidia-smi'
-alias gpu-watch='watch -n 1 nvidia-smi'
-alias cuda-version='nvcc --version'
-{{ else if eq .chezmoi.hostname "drtr" -}}
-# ML platform aliases
-alias jupyter-start='jupyter lab --ip=0.0.0.0'
-alias tb='tensorboard --logdir'
-alias gpu-status='nvidia-smi'
-{{ end }}
-
-# Safety aliases
-alias rm='rm -i'
-alias cp='cp -i'
-alias mv='mv -i'
-
-# Docker aliases
-alias dc='docker compose'
-alias dps='docker ps'
-alias dpsa='docker ps -a'
-alias dimg='docker images'
-alias dlog='docker logs -f'
-
-# ====================================================================
-# FUNCTIONS
-# ====================================================================
-
-# Create directory and change to it
-mkcd() {
-    mkdir -p "$1" && cd "$1"
-}
-
-# Extract various archive types
-extract() {
-    if [ -f $1 ]; then
-        case $1 in
-            *.tar.bz2)   tar xjf $1     ;;
-            *.tar.gz)    tar xzf $1     ;;
-            *.bz2)       bunzip2 $1     ;;
-            *.rar)       unrar e $1     ;;
-            *.gz)        gunzip $1      ;;
-            *.tar)       tar xf $1      ;;
-            *.tbz2)      tar xjf $1     ;;
-            *.tgz)       tar xzf $1     ;;
-            *.zip)       unzip $1       ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7z x $1        ;;
-            *)     echo "'$1' cannot be extracted via extract()" ;;
-        esac
-    else
-        echo "'$1' is not a valid file"
-    fi
-}
-
-# ====================================================================
-# DEVELOPMENT TOOLS
-# ====================================================================
-
-# Python virtual environment
-if command -v python3 >/dev/null 2>&1; then
-    alias py='python3'
-    alias pip='python3 -m pip'
-    alias venv='python3 -m venv'
-
-    # Activate venv in current directory
-    activate() {
-        if [ -f "venv/bin/activate" ]; then
-            source venv/bin/activate
-        elif [ -f ".venv/bin/activate" ]; then
-            source .venv/bin/activate
-        else
-            echo "No virtual environment found"
-        fi
-    }
+# Core enhanced replacements (unified detection)
+if [[ $HAS_EZA == 1 ]]; then
+  alias ls='eza --icons --group-directories-first'
+  alias ll='eza -l --icons --group-directories-first --time-style=relative'
+  alias la='eza -la --icons --group-directories-first --time-style=relative'
+  alias tree='eza --tree --icons'
+  alias ltree='eza --tree --icons -l'
+else
+  alias ls='ls --color=auto --group-directories-first'
+  alias ll='ls -la --color=auto'
+  alias la='ls -A --color=auto'
 fi
 
-# Node.js via NVM
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
-# ====================================================================
-# MODERN CLI TOOLS
-# ====================================================================
-
-# Modern replacements if available
-command -v eza >/dev/null 2>&1 && alias ls='eza'
-command -v bat >/dev/null 2>&1 && alias cat='bat'
-command -v rg >/dev/null 2>&1 && alias grep='rg'
-command -v fd >/dev/null 2>&1 && alias find='fd'
-command -v duf >/dev/null 2>&1 && alias df='duf'
-command -v btm >/dev/null 2>&1 && alias top='btm'
-
-# Starship prompt (if available and not using p10k)
-if [[ "$ZSH_THEME" != "powerlevel10k/powerlevel10k" ]] && command -v starship >/dev/null 2>&1; then
-    eval "$(starship init zsh)"
+# Unified bat detection (handles both bat and batcat)
+if [[ $HAS_BAT == 1 ]]; then
+  if _has bat; then
+    alias cat='bat --style=auto'
+    alias less='bat --paging=always'
+  elif _has batcat; then
+    alias cat='batcat --style=auto'
+    alias less='batcat --paging=always'
+  fi
+else
+  alias cat='cat'
 fi
 
-# Atuin for better history (if available)
-if command -v atuin >/dev/null 2>&1; then
-    eval "$(atuin init zsh)"
+# Unified fd detection (handles both fd and fdfind)
+if [[ $HAS_FD == 1 ]]; then
+  if _has fd; then
+    alias find='fd'
+  elif _has fdfind; then
+    alias find='fdfind'
+  fi
+else
+  alias find='find'
 fi
 
-# Zoxide for better cd (if available)
-if command -v zoxide >/dev/null 2>&1; then
-    eval "$(zoxide init zsh)"
-    alias cd='z'
+if [[ $HAS_RG == 1 ]]; then
+  alias grep='rg'
+else
+  alias grep='grep --color=auto'
 fi
+
+if [[ $HAS_DUST == 1 ]]; then
+  alias du='dust'
+else
+  alias du='du -h'
+fi
+
+# File manager
+if [[ $HAS_NNN == 1 ]]; then
+  alias n='nnn -e'
+  alias nnn='nnn -e'
+  export NNN_FIFO=/tmp/nnn.fifo
+  export NNN_PLUG='p:preview-tabbed'
+fi
+
+# Git enhancements
+if [[ $HAS_DELTA == 1 ]]; then
+  export GIT_PAGER='delta'
+fi
+
+# Directory navigation shortcuts
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+# Cluster-specific shortcuts
+alias cluster='cd /cluster-nas'
+alias configs='cd /cluster-nas/configs'
+alias docs='cd /cluster-nas/documentation'
+
+# Quick system info
+alias sysinfo='echo "Node: $(hostname)" && echo "Role: $NODE_ROLE" && echo "Arch: $ARCH" && echo "Load: $(uptime | cut -d, -f3-)"'
 
 # ====================================================================
-# COMPLETIONS
+# COMPLETION SYSTEM (LOAD FIRST)
 # ====================================================================
 
-# Load completions
-if [ -d "$HOME/.zsh/completions" ]; then
-    fpath=($HOME/.zsh/completions $fpath)
-fi
-
-# Initialize completion system
+# Initialize modern completion system before other tools
 autoload -Uz compinit
-compinit
+if [[ -n ${ZDOTDIR}/.zcompdump(#qN.mh+24) ]]; then
+  compinit -d "${ZDOTDIR:-$HOME}/.zcompdump"
+else
+  compinit -C -d "${ZDOTDIR:-$HOME}/.zcompdump"
+fi
+
+# Modern completion styling
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' # Case insensitive
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:descriptions' format '[%d]'
 
 # ====================================================================
-# LOCAL OVERRIDES
+# MODERN INTEGRATIONS (LOAD AFTER COMPLETION)
 # ====================================================================
 
-# Source local configuration if it exists
-[ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
+# Zoxide (smart cd) initialization
+if [[ $HAS_ZOXIDE == 1 ]]; then
+  eval "$(zoxide init zsh)"
+  alias cd='z'
+  alias cdi='zi'  # Interactive mode
+fi
 
-# P10k configuration
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# FZF integration
+if [[ $HAS_FZF == 1 ]]; then
+  # Use fd for fzf if available (with unified detection)
+  if [[ $HAS_FD == 1 ]]; then
+    if _has fd; then
+      export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+    elif _has fdfind; then
+      export FZF_DEFAULT_COMMAND='fdfind --type f --hidden --follow --exclude .git'
+    fi
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+  fi
+  
+  # Enhanced fzf options
+  export FZF_DEFAULT_OPTS='
+    --height 40%
+    --layout=reverse
+    --border
+    --color=hl:#5f87af
+    --color=hl+:#5fd7ff
+    --color=info:#afaf87
+    --color=marker:#87ff00
+    --color=pointer:#ff87d7
+    --color=spinner:#ff87d7
+    --color=prompt:#87ff00
+  '
+  
+  # Load fzf key bindings and completion (after compinit)
+  source <(fzf --zsh) 2>/dev/null || true
+fi
+
+# Claude local installation PATH
+if [ -d "$HOME/.claude/local" ]; then
+    export PATH="$HOME/.claude/local:$PATH"
+fi
+
+# ====================================================================
+# HISTORY SYSTEM - ATUIN (LOAD BEFORE PROMPT)
+# ====================================================================
+
+# Initialize Atuin if available (history replacement)
+if [[ $HAS_ATUIN == 1 ]]; then
+  eval "$(atuin init zsh)"
+fi
+
+# ====================================================================
+# PROMPT SYSTEM - STARSHIP (LOAD LAST)
+# ====================================================================
+
+# Initialize Starship prompt (should be last UI element)
+if [[ $HAS_STARSHIP == 1 ]]; then
+  eval "$(starship init zsh)"
+else
+  # Fallback prompt - clean and functional
+  autoload -Uz vcs_info
+  precmd() { vcs_info }
+  zstyle ':vcs_info:git:*' formats ' %b'
+  setopt PROMPT_SUBST
+  PROMPT='%F{green}%n%f@%F{blue}%m%f %F{yellow}%~%f%F{red}${vcs_info_msg_0_}%f %# '
+fi
+
+# ====================================================================
+# PERFORMANCE REPORTING
+# ====================================================================
+
+# Show startup time (only in interactive shells)
+if [[ -o interactive ]]; then
+  _shell_end_time=$EPOCHREALTIME
+  # Use float arithmetic for calculation
+  zmodload zsh/mathfunc 2>/dev/null
+  _startup_time=$(( ( _shell_end_time - _shell_start_time ) * 1000 ))
+
+  # Convert to integer for comparison and printing
+  _startup_ms=${_startup_time%.*}
+
+  if (( _startup_ms > 100 )); then
+    echo "🐚 Shell loaded in ${_startup_ms}ms (consider optimization)"
+  fi
+  unset _startup_ms
+fi
+
+# ====================================================================
+# NODE-SPECIFIC CUSTOMIZATIONS
+# ====================================================================
+
+# Universal service management aliases
+alias services='systemctl list-units --type=service --state=active'
+
+# GPU aliases (only work if nvidia-smi is installed)
+if command -v nvidia-smi >/dev/null 2>&1; then
+    alias gpus='nvidia-smi'
+    alias gpu-watch='watch -n 1 nvidia-smi'
+    alias gpu-mem='nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader'
+    alias gpu-util='nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader'
+fi
+
+# Docker aliases (only work if docker is installed)
+if command -v docker >/dev/null 2>&1; then
+    alias dps='docker ps -a --format "table {{`{{.ID}}`}}\t{{`{{.Image}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"'
+    alias dimg='docker images'
+    alias dlog='docker logs -f'
+    alias dexec='docker exec -it'
+    alias dstop='docker stop'
+    alias dstart='docker start'
+    alias drm='docker rm'
+    alias dprune='docker system prune -af'
+    # GPU support if available
+    if [ -f /usr/bin/nvidia-container-runtime ]; then
+        alias drun-gpu='docker run -it --rm --gpus all'
+    fi
+fi
+
+# Load additional local configurations if they exist
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# Clean up
+unset _shell_start_time _shell_end_time _startup_time
+unfunction _has

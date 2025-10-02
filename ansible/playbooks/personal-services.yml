@@ -1,0 +1,569 @@
+---
+# Personal Services Configuration
+# Purpose: Configure user-level services and integrations
+# Scope: User services only - no system service management
+
+- name: Configure Personal Services and Integrations
+  hosts: cluster_nodes
+  become: no
+  gather_facts: yes
+
+  tasks:
+    # ====================================================================
+    # USER SERVICE DIRECTORIES
+    # ====================================================================
+
+    - name: Create user service directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ user_home }}/.local/share/services"
+        - "{{ user_home }}/.local/share/logs"
+        - "{{ user_home }}/.local/share/configs"
+        - "{{ user_home }}/.config/systemd/user"
+
+    # ====================================================================
+    # DEVELOPMENT TOOL INTEGRATIONS
+    # ====================================================================
+
+    # DISABLED: NVM integration removed - using system Node.js only
+    # - name: Configure NVM integration (if available)
+    #   block:
+    #     - name: Check if NVM directory exists
+    #       stat:
+    #         path: "{{ user_home }}/.nvm"
+    #       register: nvm_check
+
+    #     - name: Create NVM integration script
+          copy:
+            dest: "{{ tools_directory }}/nvm-setup"
+            content: |
+              #!/bin/bash
+              # NVM Integration Setup
+
+              if [[ -d "$HOME/.nvm" ]]; then
+                  echo "NVM already installed at $HOME/.nvm"
+                  source "$HOME/.nvm/nvm.sh"
+                  echo "Current Node version: $(node --version 2>/dev/null || echo 'No Node installed')"
+                  echo "Available versions: $(nvm list 2>/dev/null | head -5)"
+              else
+                  echo "Installing NVM..."
+                  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+                  # Source NVM for current session
+                  export NVM_DIR="$HOME/.nvm"
+                  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+                  echo "Installing Node.js LTS..."
+                  nvm install --lts
+                  nvm use --lts
+                  nvm alias default lts/*
+
+                  echo "Node.js setup complete: $(node --version)"
+              fi
+            mode: "0755"
+          when: development_tools.nodejs.enable_nvm
+
+    - name: Configure Python virtual environment tools
+      block:
+        - name: Create Python workspace
+          file:
+            path: "{{ development_workspace }}/python-envs"
+            state: directory
+            mode: "0755"
+
+        - name: Create Python environment management script
+          copy:
+            dest: "{{ tools_directory }}/python-env-setup"
+            content: |
+              #!/bin/bash
+              # Python Environment Management
+
+              PYTHON_WORKSPACE="{{ development_workspace }}/python-envs"
+
+              create_env() {
+                  local env_name=$1
+                  local python_version=${2:-{{ development_tools.python.default_version }}}
+
+                  echo "Creating Python environment: $env_name (Python $python_version)"
+                  python$python_version -m venv "$PYTHON_WORKSPACE/$env_name"
+
+                  echo "Environment created at: $PYTHON_WORKSPACE/$env_name"
+                  echo "Activate with: source $PYTHON_WORKSPACE/$env_name/bin/activate"
+              }
+
+              list_envs() {
+                  echo "Available Python environments:"
+                  ls -la "$PYTHON_WORKSPACE" 2>/dev/null || echo "No environments found"
+              }
+
+              case "${1:-list}" in
+                  create)
+                      create_env "$2" "$3"
+                      ;;
+                  list)
+                      list_envs
+                      ;;
+                  *)
+                      echo "Usage: $0 {create|list} [env_name] [python_version]"
+                      echo "Examples:"
+                      echo "  $0 create myproject 3.11"
+                      echo "  $0 list"
+                      ;;
+              esac
+            mode: "0755"
+          when: development_tools.python.enable_venv
+
+    - name: Configure Rust/Cargo integration
+      block:
+        - name: Create Rust workspace
+          file:
+            path: "{{ development_workspace }}/rust-projects"
+            state: directory
+            mode: "0755"
+
+        - name: Create Cargo integration script
+          copy:
+            dest: "{{ tools_directory }}/cargo-setup"
+            content: |
+              #!/bin/bash
+              # Cargo Integration Setup
+
+              if command -v cargo >/dev/null 2>&1; then
+                  echo "Cargo available: $(cargo --version)"
+                  echo "Cargo home: ${CARGO_HOME:-$HOME/.cargo}"
+
+                  # Create common Rust project structure
+                  RUST_WORKSPACE="{{ development_workspace }}/rust-projects"
+                  mkdir -p "$RUST_WORKSPACE"/{bin,lib,examples,experiments}
+
+                  echo "Rust workspace ready at: $RUST_WORKSPACE"
+                  echo "Create new project: cargo new $RUST_WORKSPACE/my-project"
+              else
+                  echo "Cargo not available. Install Rust toolchain with:"
+                  echo "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+              fi
+            mode: "0755"
+          when: development_tools.rust.enable_cargo
+
+    # ====================================================================
+    # CLUSTER-SPECIFIC USER SERVICES
+    # ====================================================================
+
+    - name: Configure cooperator user services
+      block:
+        - name: Create web development service script
+          copy:
+            dest: "{{ tools_directory }}/web-dev-server"
+            content: |
+              #!/bin/bash
+              # User Web Development Server
+
+              PORT=${1:-3000}
+              PROJECT_DIR=${2:-{{ development_workspace }}/projects}
+
+              echo "Starting development server on port $PORT"
+              echo "Project directory: $PROJECT_DIR"
+
+              if command -v npm >/dev/null 2>&1; then
+                  echo "Node.js development server available"
+                  # Could start various dev servers based on project type
+              fi
+
+              if command -v python3 >/dev/null 2>&1; then
+                  echo "Python development server available"
+                  echo "Start Python server: python3 -m http.server $PORT"
+              fi
+
+              echo "Manual start options:"
+              echo "  Node.js: npm start (in project directory)"
+              echo "  Python: python3 -m http.server $PORT"
+              echo "  Static: python3 -m http.server $PORT --directory $PROJECT_DIR"
+            mode: "0755"
+
+        - name: Create cluster management helper
+          copy:
+            dest: "{{ tools_directory }}/cluster-mgmt"
+            content: |
+              #!/bin/bash
+              # Cluster Management Helper
+
+              show_status() {
+                  echo "=== Cluster Node Status ==="
+                  for node in {{ groups['cluster_nodes'] | join(' ') }}; do
+                      echo -n "$node: "
+                      if ping -c 1 -W 2 "$node" >/dev/null 2>&1; then
+                          echo "✓ Online"
+                      else
+                          echo "✗ Offline"
+                      fi
+                  done
+              }
+
+              show_services() {
+                  echo "=== User Services Status ==="
+                  echo "Development workspace: {{ development_workspace }}"
+                  echo "Tools directory: {{ tools_directory }}"
+                  echo "Available scripts:"
+                  ls -1 {{ tools_directory }}/ | grep -E "(setup|server|mgmt)" | sed 's/^/  /'
+              }
+
+              case "${1:-status}" in
+                  status) show_status ;;
+                  services) show_services ;;
+                  *) echo "Usage: $0 {status|services}" ;;
+              esac
+            mode: "0755"
+      when: inventory_hostname == "cooperator"
+
+    - name: Configure projector user services
+      block:
+        - name: Create GPU development helper
+          copy:
+            dest: "{{ tools_directory }}/gpu-dev-setup"
+            content: |
+              #!/bin/bash
+              # GPU Development Environment Setup
+
+              check_gpu() {
+                  echo "=== GPU Status ==="
+                  if command -v nvidia-smi >/dev/null 2>&1; then
+                      nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
+                  else
+                      echo "NVIDIA tools not available"
+                      echo "GPU development environment not ready"
+                  fi
+              }
+
+              check_docker() {
+                  echo "=== Docker GPU Support ==="
+                  if command -v docker >/dev/null 2>&1; then
+                      echo "Docker available: $(docker --version)"
+                      if docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi 2>/dev/null; then
+                          echo "✓ Docker GPU support working"
+                      else
+                          echo "✗ Docker GPU support not configured"
+                      fi
+                  else
+                      echo "Docker not available"
+                  fi
+              }
+
+              setup_cuda_workspace() {
+                  CUDA_WORKSPACE="{{ development_workspace }}/projects/gpu-dev"
+                  mkdir -p "$CUDA_WORKSPACE"/{cuda,opencl,samples}
+
+                  echo "CUDA workspace ready at: $CUDA_WORKSPACE"
+                  echo "Create CUDA project structure complete"
+              }
+
+              case "${1:-check}" in
+                  check) check_gpu && check_docker ;;
+                  setup) setup_cuda_workspace ;;
+                  *) echo "Usage: $0 {check|setup}" ;;
+              esac
+            mode: "0755"
+
+        - name: Create container development helper
+          copy:
+            dest: "{{ tools_directory }}/container-dev-setup"
+            content: |
+              #!/bin/bash
+              # Container Development Environment Setup
+
+              CONTAINER_WORKSPACE="{{ development_workspace }}/projects/containers"
+
+              setup_docker_workspace() {
+                  mkdir -p "$CONTAINER_WORKSPACE"/{dockerfiles,compose,images,volumes}
+
+                  echo "Container workspace ready at: $CONTAINER_WORKSPACE"
+                  echo "Directory structure:"
+                  echo "  dockerfiles/ - Custom Dockerfile collection"
+                  echo "  compose/     - Docker Compose configurations"
+                  echo "  images/      - Custom image builds"
+                  echo "  volumes/     - Persistent volume data"
+              }
+
+              check_docker_access() {
+                  echo "=== Docker Access Check ==="
+                  if command -v docker >/dev/null 2>&1; then
+                      if docker ps >/dev/null 2>&1; then
+                          echo "✓ Docker access working"
+                          echo "Running containers: $(docker ps --format 'table {{.Names}}\t{{.Status}}' | wc -l)"
+                      else
+                          echo "✗ Docker daemon not accessible"
+                          echo "Try: sudo usermod -aG docker {{ ansible_user }}"
+                      fi
+                  else
+                      echo "Docker not installed"
+                  fi
+              }
+
+              case "${1:-setup}" in
+                  setup) setup_docker_workspace ;;
+                  check) check_docker_access ;;
+                  *) echo "Usage: $0 {setup|check}" ;;
+              esac
+            mode: "0755"
+      when: inventory_hostname == "projector"
+
+    - name: Configure director user services
+      block:
+        - name: Create ML development helper
+          copy:
+            dest: "{{ tools_directory }}/ml-dev-setup"
+            content: |
+              #!/bin/bash
+              # ML Development Environment Setup
+
+              ML_WORKSPACE="{{ development_workspace }}/projects/ml-research"
+
+              setup_ml_workspace() {
+                  mkdir -p "$ML_WORKSPACE"/{datasets,models,notebooks,experiments,results}
+
+                  echo "ML workspace ready at: $ML_WORKSPACE"
+                  echo "Directory structure:"
+                  echo "  datasets/    - Training and test data"
+                  echo "  models/      - Trained model files"
+                  echo "  notebooks/   - Jupyter notebooks"
+                  echo "  experiments/ - Experimental code"
+                  echo "  results/     - Training results and metrics"
+              }
+
+              check_jupyter() {
+                  echo "=== Jupyter Environment ==="
+                  if command -v jupyter >/dev/null 2>&1; then
+                      echo "✓ Jupyter available: $(jupyter --version)"
+                      echo "Start Jupyter: jupyter lab --ip=0.0.0.0 --port=8888"
+                  else
+                      echo "Jupyter not available"
+                      echo "Install: pip install jupyterlab"
+                  fi
+              }
+
+              check_ml_tools() {
+                  echo "=== ML Tools Check ==="
+                  for tool in python3 pip; do
+                      if command -v "$tool" >/dev/null 2>&1; then
+                          echo "✓ $tool available"
+                      else
+                          echo "✗ $tool missing"
+                      fi
+                  done
+
+                  # Check common ML packages
+                  python3 -c "import numpy, pandas, matplotlib" 2>/dev/null && echo "✓ Basic ML packages available" || echo "✗ ML packages need installation"
+              }
+
+              case "${1:-setup}" in
+                  setup) setup_ml_workspace ;;
+                  jupyter) check_jupyter ;;
+                  check) check_ml_tools ;;
+                  *) echo "Usage: $0 {setup|jupyter|check}" ;;
+              esac
+            mode: "0755"
+
+        - name: Create data science helper
+          copy:
+            dest: "{{ tools_directory }}/data-science-setup"
+            content: |
+              #!/bin/bash
+              # Data Science Environment Setup
+
+              DS_WORKSPACE="{{ development_workspace }}/projects/data-science"
+
+              setup_ds_workspace() {
+                  mkdir -p "$DS_WORKSPACE"/{data,analysis,visualization,reports,tools}
+
+                  echo "Data science workspace ready at: $DS_WORKSPACE"
+                  echo "Directory structure:"
+                  echo "  data/          - Raw and processed datasets"
+                  echo "  analysis/      - Analysis scripts and notebooks"
+                  echo "  visualization/ - Charts, graphs, and dashboards"
+                  echo "  reports/       - Generated reports and findings"
+                  echo "  tools/         - Custom analysis tools"
+              }
+
+              create_analysis_template() {
+                  cat > "$DS_WORKSPACE/analysis/template.py" << 'EOF'
+              #!/usr/bin/env python3
+              """
+              Data Science Analysis Template
+              Generated by user ansible on {{ inventory_hostname }}
+              """
+
+              import pandas as pd
+              import numpy as np
+              import matplotlib.pyplot as plt
+              import seaborn as sns
+
+              def load_data(filepath):
+                  """Load and return dataset"""
+                  return pd.read_csv(filepath)
+
+              def analyze_data(data):
+                  """Perform basic data analysis"""
+                  print("Dataset shape:", data.shape)
+                  print("\nData types:")
+                  print(data.dtypes)
+                  print("\nBasic statistics:")
+                  print(data.describe())
+
+              def visualize_data(data):
+                  """Create basic visualizations"""
+                  # Add visualization code here
+                  pass
+
+              if __name__ == "__main__":
+                  # Load your data
+                  # data = load_data("path/to/your/data.csv")
+                  # analyze_data(data)
+                  # visualize_data(data)
+                  print("Data science template ready")
+              EOF
+                  echo "Analysis template created at: $DS_WORKSPACE/analysis/template.py"
+              }
+
+              case "${1:-setup}" in
+                  setup) setup_ds_workspace ;;
+                  template) create_analysis_template ;;
+                  *) echo "Usage: $0 {setup|template}" ;;
+              esac
+            mode: "0755"
+      when: inventory_hostname == "director"
+
+    # ====================================================================
+    # USER SERVICE VALIDATION
+    # ====================================================================
+
+    - name: Create user services validation script
+      copy:
+        dest: "{{ tools_directory }}/validate-user-services"
+        content: |
+          #!/bin/bash
+          # User Services Validation
+
+          echo "=== User Services Validation: {{ inventory_hostname }} ==="
+          echo "Node Role: {{ node_role }}"
+          echo "User Capabilities: {{ user_capabilities | join(', ') }}"
+          echo
+
+          PASSED=0
+          FAILED=0
+
+          # Check service directories
+          echo "=== Service Directories ==="
+          for dir in ~/.local/share/services ~/.local/share/logs ~/.local/share/configs; do
+              if [[ -d "$dir" ]]; then
+                  echo "  ✓ $dir"
+                  ((PASSED++))
+              else
+                  echo "  ✗ $dir"
+                  ((FAILED++))
+              fi
+          done
+          echo
+
+          # Check development tools
+          echo "=== Development Tools ==="
+          {% if development_tools.nodejs.enable_nvm %}
+          if [[ -f "{{ tools_directory }}/nvm-setup" ]]; then
+              echo "  ✓ NVM integration script"
+              ((PASSED++))
+          else
+              echo "  ✗ NVM integration script"
+              ((FAILED++))
+          fi
+          {% endif %}
+
+          {% if development_tools.python.enable_venv %}
+          if [[ -f "{{ tools_directory }}/python-env-setup" ]]; then
+              echo "  ✓ Python environment script"
+              ((PASSED++))
+          else
+              echo "  ✗ Python environment script"
+              ((FAILED++))
+          fi
+          {% endif %}
+
+          {% if development_tools.rust.enable_cargo %}
+          if [[ -f "{{ tools_directory }}/cargo-setup" ]]; then
+              echo "  ✓ Cargo integration script"
+              ((PASSED++))
+          else
+              echo "  ✗ Cargo integration script"
+              ((FAILED++))
+          fi
+          {% endif %}
+          echo
+
+          # Check node-specific services
+          echo "=== Node-Specific Services ==="
+          {% if inventory_hostname == "cooperator" %}
+          for script in web-dev-server cluster-mgmt; do
+              if [[ -f "{{ tools_directory }}/$script" ]]; then
+                  echo "  ✓ $script"
+                  ((PASSED++))
+              else
+                  echo "  ✗ $script"
+                  ((FAILED++))
+              fi
+          done
+          {% elif inventory_hostname == "projector" %}
+          for script in gpu-dev-setup container-dev-setup; do
+              if [[ -f "{{ tools_directory }}/$script" ]]; then
+                  echo "  ✓ $script"
+                  ((PASSED++))
+              else
+                  echo "  ✗ $script"
+                  ((FAILED++))
+              fi
+          done
+          {% elif inventory_hostname == "director" %}
+          for script in ml-dev-setup data-science-setup; do
+              if [[ -f "{{ tools_directory }}/$script" ]]; then
+                  echo "  ✓ $script"
+                  ((PASSED++))
+              else
+                  echo "  ✗ $script"
+                  ((FAILED++))
+              fi
+          done
+          {% endif %}
+          echo
+
+          # Summary
+          TOTAL=$((PASSED + FAILED))
+          echo "=== Validation Summary ==="
+          echo "  Passed: $PASSED"
+          echo "  Failed: $FAILED"
+          echo "  Total:  $TOTAL"
+
+          if [[ $FAILED -eq 0 ]]; then
+              echo "  Status: ✓ ALL SERVICES CONFIGURED"
+              exit 0
+          else
+              echo "  Status: ✗ Some services missing"
+              exit 1
+          fi
+        mode: "0755"
+
+    - name: Run user services validation
+      command: "{{ tools_directory }}/validate-user-services"
+      register: services_validation
+      failed_when: false
+      changed_when: false
+
+    - name: Display services validation results
+      debug:
+        msg: |
+          === User Services Validation Results ===
+          {{ services_validation.stdout }}
+
+          {% if services_validation.rc == 0 %}
+          ✓ User services validation PASSED
+          {% else %}
+          ✗ User services validation FAILED
+          {% endif %}
