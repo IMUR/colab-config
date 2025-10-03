@@ -1,0 +1,74 @@
+{
+  "directory_type": "infrastructure_architecture",
+  "primary_tool": "design_documentation",
+  "purpose": "cluster_architecture_and_design_strategy",
+  "safety_level": "high",
+  "operational_constraints": {
+    "safe_operations": [
+      "architecture_documentation_reading",
+      "design_analysis",
+      "strategy_explanation",
+      "architecture_diagram_creation",
+      "technical_specification_extraction",
+      "cross_reference_validation"
+    ],
+    "restricted_operations": [
+      "architecture_modification",
+      "design_strategy_changes",
+      "infrastructure_reconfiguration",
+      "critical_service_modification"
+    ],
+    "required_validations": [
+      "technical_accuracy_check",
+      "cross_reference_consistency",
+      "hardware_specification_validation"
+    ]
+  },
+  "common_patterns": {
+    "architecture_analysis": "read_specifications → validate_technical_details → cross_reference_implementation",
+    "design_documentation": "extract_technical_specs → organize_by_concern → validate_consistency",
+    "strategy_explanation": "identify_design_rationale → document_trade_offs → explain_benefits"
+  },
+  "technical_domains": {
+    "cluster_design": {
+      "nodes": ["cooperator_crtr", "projector_prtr", "director_drtr"],
+      "network": "192.168.254.0/24",
+      "management": "hybrid_ansible_chezmoi"
+    },
+    "gpu_compute": {
+      "hardware": ["4x_gpu_prtr", "1x_gpu_drtr"],
+      "software": "nvidia_cuda_stack",
+      "integration": "chezmoi_templates"
+    },
+    "container_platform": {
+      "engine": "docker",
+      "preservation": "critical_application_services",
+      "strategy": "clean_reinstallation"
+    },
+    "network_design": {
+      "topology": "star_configuration_via_cooperator",
+      "services": ["nfs", "dns", "proxy"],
+      "security": "internal_network_isolation"
+    }
+  },
+  "critical_specifications": {
+    "cooperator": "raspberry_pi_5_arm64_gateway_nfs_dns",
+    "projector": "x86_64_128gb_4gpu_primary_compute",
+    "director": "x86_64_64gb_1gpu_ml_development",
+    "network": "static_ip_allocation_service_routing",
+    "management": "minimal_system_maximal_user_configuration"
+  },
+  "dependencies": {
+    "hardware_specs": "node_hardware_configurations",
+    "network_config": "ip_allocation_service_routing",
+    "software_stack": "nvidia_docker_ansible_chezmoi",
+    "implementation_guides": "../guides/",
+    "reference_materials": "../reference/"
+  },
+  "escalation_triggers": [
+    "architecture_modification_request",
+    "critical_service_reconfiguration",
+    "hardware_specification_changes",
+    "network_topology_modifications"
+  ]
+}

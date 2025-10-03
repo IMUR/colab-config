@@ -1,130 +1,114 @@
 ---
-# Co-lab Cluster Master Playbook
-# Purpose: Complete cluster deployment orchestration
-# Usage: ansible-playbook site.yml [--tags infrastructure,security,services,validation]
+# User-Level Ansible Master Playbook
+# Purpose: Complete user environment orchestration across cluster nodes
+# Scope: User $HOME directory configurations only (no sudo operations)
 
 # ========================================================================
-# INFRASTRUCTURE FOUNDATION
+# USER ENVIRONMENT FOUNDATION
 # ========================================================================
 
-- name: "Phase 1: Core Infrastructure Setup"
-  import_playbook: infrastructure/cluster-infrastructure.yml
-  tags: [infrastructure, foundation]
-
-- name: "Phase 1: Security Baseline"
-  import_playbook: security/security-baseline.yml
-  tags: [security, foundation]
-
-- name: "Phase 1: System Monitoring"
-  import_playbook: monitoring/system-monitoring.yml
-  tags: [monitoring, foundation]
+- name: "Phase 1: User Development Environment"
+  import_playbook: user-environment.yml
+  tags: [environment, foundation]
 
 # ========================================================================
-# TOOLS AND SERVICES
+# PERSONAL SERVICES CONFIGURATION
 # ========================================================================
 
-- name: "Phase 2: Modern CLI Tools Installation"
-  import_playbook: tools/modern-cli-tools.yml
-  tags: [tools, services]
-
-- name: "Phase 2: Node-Specific Services"
-  import_playbook: services/node-specific-services.yml
-  tags: [services]
+- name: "Phase 2: Personal Services and Integrations"
+  import_playbook: personal-services.yml
+  tags: [services, integrations]
 
 # ========================================================================
-# USER CONFIGURATION INTEGRATION
+# COMPREHENSIVE VALIDATION
 # ========================================================================
 
-- name: "Phase 3: Omni-Config Integration"
-  import_playbook: validation/omni-config-integration.yml
-  tags: [validation, omniconfig]
-
-# ========================================================================
-# FINAL VALIDATION
-# ========================================================================
-
-- name: "Phase 4: Comprehensive Health Check"
-  import_playbook: health/cluster-health.yml
-  tags: [validation, health]
+- name: "Phase 3: User Environment Validation"
+  import_playbook: user-validation.yml
+  tags: [validation, testing]
 
 # ========================================================================
 # DEPLOYMENT SUMMARY
 # ========================================================================
 
-- name: "Deployment Summary Report"
+- name: "User Environment Deployment Summary"
   hosts: localhost
   become: no
   gather_facts: no
   tags: [always]
 
   tasks:
-    - name: Generate deployment completion report
+    - name: Generate user deployment completion report
       debug:
         msg: |
           ╔════════════════════════════════════════════════════════════════╗
-          ║                Co-lab Cluster Deployment Complete             ║
+          ║              User Environment Deployment Complete             ║
           ╚════════════════════════════════════════════════════════════════╝
 
-          🏗️  INFRASTRUCTURE DEPLOYED:
-          ✓ Core infrastructure (NFS, networking, user management)
-          ✓ Security baseline (SSH hardening, firewall, fail2ban)
-          ✓ System monitoring (health checks, performance tracking)
+          🧑‍💻 USER ENVIRONMENT CONFIGURED:
+          ✓ Development workspace structure created
+          ✓ Git configuration applied globally
+          ✓ SSH client configuration for cluster nodes
+          ✓ Node-specific development environments
 
-          🛠️  SERVICES CONFIGURED:
-          ✓ Modern CLI tools installed system-wide
-          ✓ Node-specific services configured
-          ✓ Gateway services (cooperator): Caddy, NFS, Cockpit
-          ✓ Compute services (projector): Docker prep, GPU prep
-          ✓ ML services (director): Jupyter prep, ML environment
+          🛠️ PERSONAL SERVICES DEPLOYED:
+          ✓ Development tool integrations (NVM, Python, Rust)
+          ✓ Node-specific helper scripts and tools
+          ✓ User-level service management utilities
+          ✓ Workspace and project structure templates
 
-          🔄 USER CONFIGURATION READY:
-          ✓ Chezmoi installed and configured
-          ✓ Omni-config integration scripts deployed
-          ✓ Validation tools available system-wide
+          🔄 INTEGRATION VALIDATED:
+          ✓ System + User configuration integration tested
+          ✓ Tool detection and availability confirmed
+          ✓ Cluster connectivity and NFS access verified
+          ✓ Node-specific capabilities validated
 
-          📊 MONITORING ACTIVE:
-          ✓ Automated health checks every 5 minutes
-          ✓ Daily performance reports
-          ✓ Security monitoring with fail2ban
-          ✓ Real-time dashboard available
+          📊 USER ORCHESTRATION COMPLETE:
+          ✓ Cooperator: Web development and cluster management tools
+          ✓ Projector: GPU and container development environments
+          ✓ Director: ML and data science development platforms
 
           🎯 NEXT STEPS:
 
-          1. DEPLOY USER CONFIGURATIONS:
+          1. VERIFY USER ENVIRONMENT:
              for node in crtr prtr drtr; do
-                 ssh $node 'cluster-validate standard'
+                 ssh $node '~/.local/bin/validate-user-environment'
              done
 
-          2. VERIFY OMNI-CONFIG DEPLOYMENT:
-             cluster-validate changes --preview
+          2. TEST PERSONAL SERVICES:
+             for node in crtr prtr drtr; do
+                 ssh $node '~/.local/bin/validate-user-services'
+             done
 
-          3. MONITOR SYSTEM HEALTH:
-             cluster-dashboard                # Real-time monitoring
-             cluster-health-check            # Manual health check
-             cluster-security-status         # Security status
+          3. RUN COMPREHENSIVE VALIDATION:
+             ansible-playbook omni-config/ansible/playbooks/user-validation.yml
 
-          4. NODE-SPECIFIC SETUP:
-             # On projector (when ready):
-             sudo /opt/docker-prep/install-docker.sh
-             sudo /opt/gpu-prep/install-nvidia-drivers.sh
+          4. USE NODE-SPECIFIC TOOLS:
+             # On cooperator:
+             ssh crtr '~/.local/bin/web-dev-server'
+             ssh crtr '~/.local/bin/cluster-mgmt status'
 
-             # On director (when ready):
-             ~/ml-workspace/setup-ml-env.sh
-             sudo /opt/jupyter-prep/install-jupyter.sh
+             # On projector:
+             ssh prtr '~/.local/bin/gpu-dev-setup check'
+             ssh prtr '~/.local/bin/container-dev-setup setup'
 
-          📚 DOCUMENTATION:
-          - Playbook documentation: ansible/playbooks/README.md
-          - Validation checklist: STAGE2-VALIDATION-CHECKLIST.md
-          - Change tracking: scripts/validate-omniconfig-changes.sh
+             # On director:
+             ssh drtr '~/.local/bin/ml-dev-setup setup'
+             ssh drtr '~/.local/bin/data-science-setup setup'
 
-          🔧 AVAILABLE COMMANDS:
-          - cluster-validate [standard|changes]
-          - cluster-health-check
-          - cluster-security-status
-          - cluster-dashboard
-          - [node]-status (cooperator-status, projector-status, director-status)
+          📚 USER DOCUMENTATION:
+          - User workspace: ~/workspace/docs/[node]-profile.md
+          - Validation reports: ~/.local/share/validation-report-*.txt
+          - Development tools: ~/.local/bin/[tool]-setup scripts
+
+          🔧 AVAILABLE USER COMMANDS:
+          - validate-user-environment
+          - validate-user-services
+          - dev-env-status
+          - [development-tool]-setup scripts
+          - [node-role]-specific helper scripts
 
           ═══════════════════════════════════════════════════════════════
-          Strategic Hybrid Deployment: SYSTEM FOUNDATION COMPLETE
-          Ready for omni-config user configuration deployment
+          User Environment: COMPLETE ORCHESTRATION DEPLOYED
+          Strategic Hybrid: System Foundation + User Orchestration = SUCCESS
           ═══════════════════════════════════════════════════════════════

@@ -1,0 +1,78 @@
+{
+  "repository_type": "infrastructure_configuration",
+  "management_philosophy": "hybrid_tooling_with_safety",
+  "primary_tools": ["chezmoi", "ansible", "docker"],
+  "safety_level": "high",
+  "purpose": "Manage Co-lab cluster configuration with maximum safety",
+
+  "operational_boundaries": {
+    "safe_operations": [
+      "template_modification",
+      "documentation_updates",
+      "validation_execution",
+      "dry_run_testing",
+      "syntax_checking"
+    ],
+    "restricted_operations": [
+      "system_file_modification",
+      "service_restart",
+      "network_configuration",
+      "user_account_changes",
+      "ansible_playbook_execution"
+    ],
+    "forbidden_operations": [
+      "file_deletion",
+      "credential_storage",
+      "direct_system_modification",
+      "production_deployment"
+    ]
+  },
+
+  "validation_requirements": {
+    "dotfiles": [
+      "chezmoi diff before apply",
+      "template syntax validation",
+      "node variable verification"
+    ],
+    "ansible": [
+      "syntax check mandatory",
+      "inventory validation required",
+      "dry run before execution",
+      "approval gate for system changes"
+    ],
+    "services": [
+      "docker compose config validation",
+      "environment variable check",
+      "no secrets in repository"
+    ]
+  },
+
+  "workflow_patterns": {
+    "configuration_change": "read_context -> validate -> test -> apply",
+    "system_modification": "check_safety -> syntax_check -> dry_run -> get_approval -> execute",
+    "documentation_update": "update -> cross_reference -> validate_links",
+    "service_deployment": "validate_config -> check_environment -> deploy_with_approval"
+  },
+
+  "directory_guidance": {
+    "dotfiles": "User configurations managed by Chezmoi",
+    "ansible": "System automation with strict safety rules",
+    "services": "Docker-based service deployments",
+    "scripts": "Automation tooling with validation",
+    "docs": "Comprehensive documentation",
+    ".meta": "Repository meta-management"
+  },
+
+  "escalation_triggers": [
+    "safety_rule_violation",
+    "validation_failure",
+    "system_modification_request",
+    "production_change_attempt"
+  ],
+
+  "success_metrics": {
+    "validation_pass_rate": 0.95,
+    "safety_compliance": 1.0,
+    "documentation_coverage": 0.90
+  }
+}

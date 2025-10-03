@@ -1,32 +1,31 @@
-# AI Agent Runtime Information
+# AI Agent Operational Guide
 
-## Critical Paths
+## Boundaries
+✅ **Safe**: Template mods, documentation, validation, chezmoi diff
+⚠️  **Approval**: System changes, service restarts, ansible playbooks
+❌ **Forbidden**: File deletion, system files, network config
 
-- **Working Directory**: `/cluster-nas/colab/colab-config`
-- **Chezmoi Source**: `omni-config/` (via `.chezmoiroot`)
-- **System Ansible**: `system-ansible/` (renamed from `ansible/`)
-- **Node Access**: SSH to `crtr`, `prtr`, `drtr`
+## Key Paths
+- User configs: `dotfiles/`
+- System: `ansible/` (requires --check first)
+- Validation: `scripts/validation/`
+- Context: `.agent-context.json` in each directory
 
-## Tool Constraints
+## Workflows
+1. **Config Update**: Read context → Validate → Test → Apply
+2. **System Change**: Check syntax → Dry run → Get approval → Execute
+3. **Documentation**: Update → Validate links → Commit
 
-- **Git Operations**: Use `git mv` for all moves (preserve history)
-- **Chezmoi**: Templates stay at `omni-config/` root
-- **Testing**: Validate with `chezmoi status` before changes
+## Validation Commands
+```bash
+chezmoi diff                              # Preview dotfile changes
+ansible-playbook --syntax-check           # Validate ansible
+scripts/validation/full-validation.sh     # Complete check
+```
 
-## Current State
+## Tool Rules
+- **Chezmoi**: Always diff before apply
+- **Ansible**: Always --check before real run
+- **Git**: Use git mv for file moves
 
-- ✅ Chezmoi deployed and working on all nodes
-- ✅ System Node.js installed (no NVM)
-- ⚠️ Repository restructure in progress
-- 🔄 Claude local installation via migrate-installer
-
-## Structure Navigation
-
-See `trail.yaml` for machine-readable structure.
-See `README.md` for complete documentation.
-
-## Token Optimization
-
-- Primary docs in README.md (not duplicated here)
-- Use `trail.yaml` for programmatic navigation
-- Check `docs/governance/STRICT-RULES.md` for constraints
+Read `.agent-context.json` in each directory for specific guidance.

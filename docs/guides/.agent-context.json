@@ -1,0 +1,48 @@
+{
+  "directory_type": "implementation_guides",
+  "primary_tool": "procedural_documentation",
+  "purpose": "step_by_step_operational_procedures",
+  "safety_level": "high",
+  "operational_constraints": {
+    "safe_operations": [
+      "procedure_documentation_reading",
+      "workflow_analysis",
+      "guide_explanation",
+      "safety_procedure_documentation",
+      "timeline_estimation",
+      "risk_assessment_documentation"
+    ],
+    "restricted_operations": [
+      "procedure_execution",
+      "infrastructure_modification",
+      "service_restart_commands",
+      "system_level_changes",
+      "dangerous_operation_suggestions"
+    ],
+    "required_validations": [
+      "safety_procedure_verification",
+      "rollback_procedure_documentation",
+      "risk_level_assessment"
+    ]
+  },
+  "operational_procedures": {
+    "infrastructure_reset": {
+      "risk_level": "high",
+      "timeline": "3_hours_total_2_hours_downtime",
+      "preservation": "100_percent_archon_container_protection",
+      "phases": ["preparation", "removal", "deployment", "restoration", "validation"]
+    },
+    "service_management": {
+      "risk_level": "medium_high",
+      "scope": "318_systemd_units_analyzed",
+      "critical_services": ["archon.service", "ollama.service"],
+      "approach": "dependency_aware_restart_sequences"
+    }
+  },
+  "dependencies": {
+    "architecture_docs": "../architecture/",
+    "reference_materials": "../reference/",
+    "validation_scripts": "../../scripts/testing/",
+    "critical_services": ["archon", "ollama", "nfs", "dns"]
+  }
+}

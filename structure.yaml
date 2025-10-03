@@ -1,0 +1,193 @@
+# Machine-Readable Repository Structure
+# Purpose: Programmatic navigation and AI agent guidance
+version: "2.0"
+generated: "2025-01-27"
+
+metadata:
+  repository: colab-config
+  type: infrastructure_configuration
+  management: hybrid_tooling
+  safety_priority: maximum
+
+navigation:
+  entry_points:
+    human_quick: START-HERE.md
+    human_full: README.md
+    ai_agent: AGENTS.md
+    ai_structure: structure.yaml
+    ai_context: .agent-context.json
+
+  by_purpose:
+    user_configuration:
+      primary: dotfiles/
+      documentation: dotfiles/README.md
+      context: dotfiles/.agent-context.json
+      examples: docs/examples/templates/
+      validation: scripts/validation/check-dotfiles.sh
+
+    system_infrastructure:
+      primary: ansible/
+      documentation: ansible/README.md
+      context: ansible/.agent-context.json
+      safety: ansible/.safety-rules.yml
+      validation: scripts/validation/check-ansible.sh
+
+    service_management:
+      primary: services/
+      documentation: services/README.md
+      context: services/.agent-context.json
+      deployment: services/DEPLOYMENT.md
+      validation: scripts/validation/check-services.sh
+
+    automation_scripts:
+      primary: scripts/
+      documentation: scripts/README.md
+      validation: scripts/validation/
+      deployment: scripts/deployment/
+      setup: scripts/setup/
+
+    documentation:
+      primary: docs/
+      guides: docs/guides/
+      examples: docs/examples/
+      archive: docs/archive/
+
+    meta_management:
+      primary: .meta/
+      schemas: .meta/schemas/
+      workflows: .meta/workflows/
+      validation: .meta/validation/
+
+structure:
+  dotfiles:
+    purpose: "Chezmoi-managed user configurations"
+    management_tool: chezmoi
+    key_files:
+      - .chezmoi.toml.tmpl: "Node-specific configuration"
+      - dot_bashrc.tmpl: "Bash configuration template"
+      - dot_gitconfig.tmpl: "Git configuration template"
+    constraints:
+      - "Templates must use .tmpl extension"
+      - "Dotfiles must use dot_ prefix"
+      - "Node variables in .chezmoi.toml.tmpl"
+
+  ansible:
+    purpose: "Minimal system-level automation"
+    management_tool: ansible
+    subdirectories:
+      playbooks: "Ansible playbooks"
+      inventory: "Host definitions"
+      group_vars: "Group variables"
+      host_vars: "Host-specific variables"
+    constraints:
+      - "Always requires --check first"
+      - "System changes need approval"
+      - "Safety rules enforced"
+
+  services:
+    purpose: "Containerized service management"
+    management_tool: docker_compose
+    key_files:
+      - docker-compose.yml: "Service definitions"
+      - .env.template: "Environment template"
+      - DEPLOYMENT.md: "Deployment guide"
+    constraints:
+      - "Use compose for orchestration"
+      - "Environment templates only"
+      - "No secrets in repository"
+
+  scripts:
+    purpose: "Automation and validation tooling"
+    subdirectories:
+      validation: "Validation scripts"
+      setup: "Setup automation"
+      deployment: "Deployment tools"
+    constraints:
+      - "Must pass shellcheck"
+      - "Include help text"
+      - "Non-destructive by default"
+
+validation:
+  commands:
+    dotfiles:
+      syntax: "chezmoi execute-template --init --promptString email=test@example.com < /dev/null"
+      diff: "chezmoi diff"
+      apply: "chezmoi apply --dry-run"
+
+    ansible:
+      syntax: "ansible-playbook --syntax-check playbooks/*.yml"
+      inventory: "ansible-inventory --list"
+      check: "ansible-playbook --check"
+
+    services:
+      config: "docker compose config"
+      validate: "docker compose config --quiet"
+
+    scripts:
+      shellcheck: "shellcheck scripts/**/*.sh"
+      execute: "bash -n scripts/**/*.sh"
+
+  safety_gates:
+    - level: syntax
+      automatic: true
+      blocking: true
+    - level: dry_run
+      automatic: true
+      blocking: false
+    - level: approval
+      automatic: false
+      blocking: true
+      required_for: ["system_changes", "service_deployment"]
+
+ai_workflows:
+  safe_operations:
+    exploration:
+      - read_documentation
+      - analyze_structure
+      - check_validation_status
+    modification:
+      - update_templates
+      - enhance_documentation
+      - improve_scripts
+    validation:
+      - run_syntax_checks
+      - execute_dry_runs
+      - verify_safety_rules
+
+  restricted_operations:
+    require_approval:
+      - system_configuration_changes
+      - service_deployments
+      - network_modifications
+    prohibited:
+      - file_deletion
+      - system_file_modification
+      - credential_handling
+
+  escalation_patterns:
+    - trigger: safety_violation
+      action: halt_and_explain
+    - trigger: validation_failure
+      action: provide_fix_suggestions
+    - trigger: approval_required
+      action: document_and_wait
+
+tools:
+  required:
+    - name: chezmoi
+      version: ">=2.0.0"
+      purpose: "User configuration management"
+    - name: ansible
+      version: ">=2.9"
+      purpose: "System automation"
+    - name: docker
+      version: ">=20.10"
+      purpose: "Service containerization"
+
+  optional:
+    - name: shellcheck
+      purpose: "Script validation"
+    - name: yamllint
+      purpose: "YAML validation"
+    - name: ansible-lint
+      purpose: "Playbook linting"

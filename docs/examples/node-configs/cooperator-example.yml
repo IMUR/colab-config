@@ -1,0 +1,261 @@
+# Cooperator Node Configuration Example
+# Node: cooperator (crtr)
+# Role: Gateway, DNS, NFS Server
+# Hardware: Raspberry Pi 5, ARM64, 16GB RAM
+
+---
+# Node identification
+node_name: cooperator
+hostname: cooperator.ism.la
+node_role: gateway
+architecture: arm64
+
+# Network configuration
+network:
+  interface: eth0
+  ip_address: 192.168.254.10
+  netmask: 255.255.255.0
+  gateway: 192.168.254.1
+  dns_servers:
+    - 127.0.0.1  # Local Pi-hole
+    - 1.1.1.1    # Fallback
+
+# Hardware specifications
+hardware:
+  cpu: "Broadcom BCM2712 (ARM Cortex-A76)"
+  cores: 4
+  memory: "16GB"
+  storage: "1TB NVMe SSD"
+  gpu: false
+  gpu_count: 0
+
+# Services configuration
+services:
+  # DNS Server (Pi-hole)
+  pihole:
+    enabled: true
+    port: 53
+    web_port: 80
+    domain: ism.la
+    upstream_dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    ad_blocking: true
+    local_records:
+      - { name: cooperator.ism.la, ip: 192.168.254.10 }
+      - { name: projector.ism.la, ip: 192.168.254.20 }
+      - { name: director.ism.la, ip: 192.168.254.30 }
+
+  # NFS Server
+  nfs:
+    enabled: true
+    exports:
+      - path: /cluster-nas
+        clients: "192.168.254.0/24"
+        options: "rw,sync,no_subtree_check,no_root_squash"
+    directories:
+      - /cluster-nas/configs
+      - /cluster-nas/backups
+      - /cluster-nas/shared
+      - /cluster-nas/data
+
+  # Reverse Proxy (Caddy)
+  caddy:
+    enabled: true
+    config_file: /etc/caddy/Caddyfile
+    domains:
+      - "*.ism.la"
+    upstreams:
+      archon: "projector.ism.la:8181"
+      ollama: "projector.ism.la:11434"
+      jupyter: "director.ism.la:8888"
+
+  # System monitoring
+  cockpit:
+    enabled: true
+    port: 9090
+    ssl: true
+
+  # SSH server
+  ssh:
+    enabled: true
+    port: 22
+    key_only: true
+    root_login: false
+
+# Software packages
+packages:
+  system:
+    - nfs-kernel-server
+    - rpcbind
+    - pihole
+    - caddy
+    - cockpit
+    - fail2ban
+    - ufw
+
+  development:
+    - git
+    - vim
+    - tmux
+    - htop
+    - curl
+    - wget
+
+# User configuration
+users:
+  - name: prtr
+    uid: 1001  # Required for NFS file ownership consistency
+    groups:
+      - sudo
+      - adm
+      - cluster
+    shell: /bin/zsh
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample..."
+
+# Firewall configuration
+firewall:
+  enabled: true
+  default_policy: deny
+  rules:
+    # SSH access
+    - { port: 22, protocol: tcp, source: any, action: allow }
+    # HTTP/HTTPS
+    - { port: 80, protocol: tcp, source: any, action: allow }
+    - { port: 443, protocol: tcp, source: any, action: allow }
+    # DNS
+    - { port: 53, protocol: udp, source: "192.168.254.0/24", action: allow }
+    - { port: 53, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # NFS
+    - { port: 2049, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    - { port: 111, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    - { port: 111, protocol: udp, source: "192.168.254.0/24", action: allow }
+    # Cockpit
+    - { port: 9090, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Cluster internal
+    - { protocol: any, source: "192.168.254.0/24", action: allow }
+
+# Storage configuration
+storage:
+  mount_points:
+    - device: /dev/nvme0n1p1
+      path: /cluster-nas
+      filesystem: ext4
+      options: defaults,noatime
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 30  # Days
+  targets:
+    - /etc/
+    - /home/
+    - /cluster-nas/configs/
+  destination: /cluster-nas/backups/cooperator/
+
+# Monitoring and logging
+monitoring:
+  log_level: info
+  log_retention: 30  # Days
+  metrics:
+    - cpu_usage
+    - memory_usage
+    - disk_usage
+    - network_traffic
+    - service_status
+
+# Environment variables
+environment:
+  CLUSTER_NODE: cooperator
+  NODE_ROLE: gateway
+  NODE_IP: 192.168.254.10
+  HAS_GPU: false
+  IS_GATEWAY: true
+
+# Chezmoi template variables (for .chezmoi.toml.tmpl)
+template_data:
+  node_role: gateway
+  has_gpu: false
+  has_nfs_server: true
+  has_dns_server: true
+  is_gateway: true
+  external_access: true
+  has_docker: true
+  has_archon_service: false
+  has_ollama_service: false
+  cluster_member: true
+
+# Service dependencies
+dependencies:
+  critical:
+    - network
+    - storage
+  services:
+    - ssh
+    - nfs-kernel-server
+    - pihole-FTL
+    - caddy
+
+# Maintenance schedules
+maintenance:
+  package_updates:
+    schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+    auto_reboot: false
+
+  log_rotation:
+    schedule: "0 1 * * *"  # Daily at 1 AM
+    compress: true
+
+  backup_verification:
+    schedule: "0 4 * * 1"  # Weekly on Monday at 4 AM
+
+# Security configuration
+security:
+  fail2ban:
+    enabled: true
+    jail_configs:
+      - name: sshd
+        enabled: true
+        maxretry: 3
+        bantime: 3600
+
+  automatic_updates:
+    enabled: true
+    security_only: true
+    reboot_if_required: false
+
+# Notes and documentation
+notes: |
+  Cooperator serves as the cluster gateway node, providing essential
+  infrastructure services:
+
+  - DNS resolution via Pi-hole for .ism.la domain
+  - NFS server for shared cluster storage
+  - Reverse proxy for web services
+  - Internet gateway and firewall
+  - Central monitoring and logging
+
+  This node must remain highly available as other nodes depend on
+  its services for normal operation.
+
+# Configuration validation
+validation:
+  required_services:
+    - ssh
+    - nfs-kernel-server
+    - pihole-FTL
+    - caddy
+
+  required_ports:
+    - 22    # SSH
+    - 53    # DNS
+    - 80    # HTTP
+    - 443   # HTTPS
+    - 2049  # NFS
+
+  required_directories:
+    - /cluster-nas
+    - /cluster-nas/configs
+    - /cluster-nas/backups

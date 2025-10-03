@@ -1,0 +1,516 @@
+# Director Node Configuration Example
+# Node: director (drtr)
+# Role: ML Platform, Single GPU Specialized Workloads
+# Hardware: x86_64, 64GB RAM, 1x GPU
+
+---
+# Node identification
+node_name: director
+hostname: director.ism.la
+node_role: ml_platform
+architecture: x86_64
+
+# Network configuration
+network:
+  interface: enp3s0
+  ip_address: 192.168.254.30
+  netmask: 255.255.255.0
+  gateway: 192.168.254.10
+  dns_servers:
+    - 192.168.254.10  # Cooperator (Pi-hole)
+    - 1.1.1.1         # Fallback
+
+# Hardware specifications
+hardware:
+  cpu: "Intel Core i5-9600K"
+  cores: 6
+  threads: 6
+  memory: "64GB DDR4"
+  storage: "1TB NVMe SSD"
+  gpu: true
+  gpu_count: 1
+  gpu_details:
+    - model: "NVIDIA RTX 2080"
+      memory: "8GB"
+      pci_slot: "01:00.0"
+      compute_capability: "7.5"
+
+# GPU configuration
+gpu_config:
+  driver_version: "560.35.03"
+  cuda_version: "12.6"
+  cuda_home: "/usr/local/cuda"
+  nvidia_persistence: true
+  power_management: true
+  single_gpu_optimization:
+    cuda_device_order: "FASTEST_FIRST"
+    memory_optimization: true
+    compute_exclusive: false
+
+# Services configuration
+services:
+  # Ollama LLM Service (Primary)
+  ollama:
+    enabled: true
+    type: "systemd"
+    port: 11434
+    models_path: "/var/lib/ollama/models"
+    gpu_layers: -1  # Use all available GPU layers
+    host: "0.0.0.0"
+    context_size: 4096
+    models:
+      - llama3.1:8b
+      - codellama:7b
+      - mistral:7b
+      - phi3:mini
+    model_config:
+      max_concurrent: 2
+      gpu_memory_fraction: 0.8
+
+  # Jupyter Lab (Development Environment)
+  jupyter:
+    enabled: true
+    port: 8888
+    token: "generated"
+    gpu_support: true
+    kernels:
+      - python3
+      - julia
+      - r
+    extensions:
+      - jupyterlab-git
+      - jupyter-matplotlib
+      - jupyterlab-tensorboard
+
+  # ML Model Serving
+  model_serving:
+    enabled: true
+    framework: "vllm"
+    port_range: "9000-9099"
+    models:
+      - name: "code-assistant"
+        model: "codellama:7b"
+        port: 9001
+        gpu_memory: 0.4
+      - name: "chat-assistant"
+        model: "llama3.1:8b"
+        port: 9002
+        gpu_memory: 0.4
+
+  # Docker service
+  docker:
+    enabled: true
+    version: "latest"
+    daemon_config:
+      storage_driver: "overlay2"
+      log_driver: "json-file"
+      log_opts:
+        max_size: "100m"
+        max_file: "3"
+      default_runtime: "nvidia"
+      runtimes:
+        nvidia:
+          path: "nvidia-container-runtime"
+    gpu_support: true
+
+  # Development Tools
+  development:
+    vscode_server:
+      enabled: true
+      port: 8080
+      gpu_support: true
+
+    mlflow:
+      enabled: true
+      port: 5000
+      backend_store: "/var/lib/mlflow"
+
+    tensorboard:
+      enabled: true
+      port: 6006
+      log_dir: "/var/lib/tensorboard"
+
+  # SSH server
+  ssh:
+    enabled: true
+    port: 22
+    key_only: true
+    root_login: false
+    x11_forwarding: true
+
+  # NFS client
+  nfs_client:
+    enabled: true
+    mounts:
+      - source: "cooperator.ism.la:/cluster-nas"
+        target: "/cluster-nas"
+        type: "nfs4"
+        options: "defaults,_netdev"
+
+# Software packages
+packages:
+  system:
+    - nvidia-driver-560
+    - cuda-toolkit-12-6
+    - nvidia-container-toolkit
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - nfs-common
+
+  ml_frameworks:
+    - python3-torch
+    - python3-tensorflow
+    - python3-sklearn
+    - python3-pandas
+    - python3-numpy
+    - python3-matplotlib
+    - python3-jupyter
+
+  development:
+    - git
+    - vim
+    - tmux
+    - htop
+    - nvtop
+    - curl
+    - wget
+    - build-essential
+    - python3-dev
+    - python3-pip
+    - nodejs
+    - npm
+
+  gpu_tools:
+    - nvidia-cuda-dev
+    - nvidia-ml-py3
+    - gpu-burn
+
+# Python environment management
+python_env:
+  uv_package_manager: true
+  virtual_environments:
+    - name: "ml-research"
+      path: "/opt/ml-research"
+      packages:
+        - torch
+        - torchvision
+        - torchaudio
+        - transformers
+        - accelerate
+        - datasets
+        - wandb
+        - tensorboard
+      gpu_index_url: "https://download.pytorch.org/whl/cu126"
+
+    - name: "model-serving"
+      path: "/opt/model-serving"
+      packages:
+        - vllm
+        - fastapi
+        - uvicorn
+        - pydantic
+        - prometheus-client
+      gpu_index_url: "https://download.pytorch.org/whl/cu126"
+
+# User configuration
+users:
+  - name: prtr
+    uid: 1000
+    groups:
+      - sudo
+      - docker
+      - adm
+      - cluster
+    shell: /bin/zsh
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample..."
+
+# Storage configuration
+storage:
+  mount_points:
+    - device: /dev/nvme0n1p1
+      path: /
+      filesystem: ext4
+      options: defaults,noatime
+    - device: cooperator.ism.la:/cluster-nas
+      path: /cluster-nas
+      filesystem: nfs4
+      options: defaults,_netdev
+
+  data_directories:
+    - path: /var/lib/ollama
+      owner: ollama
+      group: ollama
+      mode: "0755"
+    - path: /var/lib/jupyter
+      owner: prtr
+      group: prtr
+      mode: "0755"
+    - path: /var/lib/mlflow
+      owner: prtr
+      group: prtr
+      mode: "0755"
+
+# Environment variables
+environment:
+  CLUSTER_NODE: director
+  NODE_ROLE: ml_platform
+  NODE_IP: 192.168.254.30
+  HAS_GPU: true
+  GPU_COUNT: 1
+  CUDA_HOME: /usr/local/cuda
+  CUDA_VERSION: "12.6"
+  NVIDIA_VISIBLE_DEVICES: all
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility,graphics"
+  DOCKER_BUILDKIT: 1
+  DOCKER_DEFAULT_RUNTIME: nvidia
+  PYTHONPATH: "/opt/ml-research/lib/python3.11/site-packages"
+
+# Chezmoi template variables
+template_data:
+  node_role: ml_platform
+  has_gpu: true
+  gpu_count: 1
+  gpu_architecture: single_gpu
+  has_cuda_runtime: true
+  has_cuda_toolkit: true
+  cuda_version: "12.6"
+  cuda_home: "/usr/local/cuda"
+  has_docker: true
+  has_nvidia_container: true
+  docker_gpu_support: true
+  has_archon_service: false
+  has_ollama_service: true
+  supports_vllm: true
+  supports_llama_cpp: true
+  supports_pytorch_cuda: true
+  cluster_member: true
+
+# Firewall configuration
+firewall:
+  enabled: true
+  default_policy: deny
+  rules:
+    # SSH access
+    - { port: 22, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Jupyter Lab
+    - { port: 8888, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # VS Code Server
+    - { port: 8080, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Ollama
+    - { port: 11434, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # MLflow
+    - { port: 5000, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # TensorBoard
+    - { port: 6006, protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Model serving ports
+    - { port: "9000:9099", protocol: tcp, source: "192.168.254.0/24", action: allow }
+    # Cluster internal
+    - { protocol: any, source: "192.168.254.0/24", action: allow }
+
+# Performance tuning
+performance:
+  gpu:
+    persistence_mode: true
+    power_limit: 250  # Watts (RTX 2080)
+    memory_clock: 7000
+    graphics_clock: 1800
+    compute_mode: "default"
+
+  cpu:
+    governor: "performance"
+    turbo_boost: true
+
+  memory:
+    swappiness: 5  # Lower for ML workloads
+    dirty_ratio: 10
+    huge_pages: 2048  # For large model loading
+
+# ML-specific configuration
+ml_config:
+  model_cache:
+    path: "/var/cache/ml-models"
+    size_limit: "100GB"
+    cleanup_schedule: "0 4 * * 0"  # Weekly cleanup
+
+  dataset_storage:
+    path: "/cluster-nas/datasets"
+    local_cache: "/var/cache/datasets"
+    cache_size: "50GB"
+
+  experiment_tracking:
+    mlflow_uri: "file:///var/lib/mlflow"
+    tensorboard_logs: "/var/lib/tensorboard"
+    wandb_dir: "/var/lib/wandb"
+
+# Monitoring and logging
+monitoring:
+  gpu_monitoring:
+    enabled: true
+    interval: 30  # seconds
+    metrics:
+      - utilization
+      - memory_usage
+      - temperature
+      - power_consumption
+      - compute_processes
+    alerts:
+      temperature_threshold: 83  # Celsius
+      memory_threshold: 90  # Percent
+
+  jupyter_monitoring:
+    enabled: true
+    notebook_usage: true
+    kernel_memory: true
+    session_tracking: true
+
+  model_serving_metrics:
+    enabled: true
+    request_latency: true
+    throughput: true
+    error_rates: true
+    gpu_utilization: true
+
+# Development workflows
+workflows:
+  model_development:
+    data_preprocessing: "/opt/ml-research/scripts/preprocess.py"
+    training_pipeline: "/opt/ml-research/scripts/train.py"
+    evaluation: "/opt/ml-research/scripts/evaluate.py"
+    deployment: "/opt/ml-research/scripts/deploy.py"
+
+  experiment_management:
+    experiment_template: "/opt/ml-research/templates/experiment.py"
+    hyperparameter_sweep: "/opt/ml-research/scripts/sweep.py"
+    model_comparison: "/opt/ml-research/scripts/compare.py"
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  targets:
+    - /etc/
+    - /home/
+    - /var/lib/jupyter/
+    - /var/lib/mlflow/
+    - /opt/ml-research/
+  exclude:
+    - /var/cache/  # Too large and ephemeral
+    - /tmp/
+  destination: /cluster-nas/backups/director/
+
+  model_backups:
+    schedule: "0 5 * * 0"  # Weekly on Sunday at 5 AM
+    targets:
+      - /var/lib/ollama/models/
+      - /var/cache/ml-models/
+    destination: /cluster-nas/backups/models/
+
+# Service dependencies
+dependencies:
+  critical:
+    - network
+    - storage
+    - nvidia-driver
+  services:
+    - docker
+    - nvidia-persistenced
+    - nfs-client.target
+  applications:
+    - ollama (depends on nvidia)
+    - jupyter (depends on python env)
+
+# Health checks and validation
+health_checks:
+  gpu:
+    command: "nvidia-smi"
+    expected_gpus: 1
+    interval: 300
+
+  ollama:
+    endpoint: "http://localhost:11434/api/version"
+    interval: 180
+
+  jupyter:
+    endpoint: "http://localhost:8888/api"
+    interval: 300
+
+  python_env:
+    torch_cuda: "python3 -c 'import torch; print(torch.cuda.is_available())'"
+    expected_output: "True"
+    interval: 3600
+
+# Security configuration
+security:
+  jupyter_security:
+    token_authentication: true
+    ssl_enabled: false  # Internal network only
+    disable_check_xsrf: false
+
+  model_serving_security:
+    api_key_required: false  # Internal cluster only
+    rate_limiting: true
+    cors_enabled: true
+
+# Research and development tools
+research_tools:
+  notebooks:
+    templates_path: "/opt/ml-research/notebooks/templates"
+    shared_notebooks: "/cluster-nas/shared/notebooks"
+
+  datasets:
+    huggingface_cache: "/var/cache/huggingface"
+    torch_datasets: "/var/cache/torch"
+    custom_datasets: "/cluster-nas/datasets"
+
+  model_zoo:
+    local_models: "/var/lib/ollama/models"
+    cached_models: "/var/cache/ml-models"
+    shared_models: "/cluster-nas/shared/models"
+
+# Maintenance schedules
+maintenance:
+  model_updates:
+    schedule: "0 6 * * 0"  # Weekly on Sunday at 6 AM
+    actions:
+      - update_ollama_models
+      - cleanup_old_checkpoints
+      - validate_model_integrity
+
+  development_cleanup:
+    schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+    actions:
+      - cleanup_jupyter_checkpoints
+      - prune_docker_images
+      - clear_cache_directories
+
+  performance_optimization:
+    schedule: "0 4 * * 1"  # Weekly on Monday at 4 AM
+    actions:
+      - defragment_model_cache
+      - optimize_jupyter_config
+      - update_gpu_settings
+
+# Notes and documentation
+notes: |
+  Director serves as the ML platform and development node:
+
+  - Single RTX 2080 GPU optimized for ML development and serving
+  - Jupyter Lab environment for interactive development
+  - Ollama for local LLM inference and experimentation
+  - Model serving infrastructure for deployment testing
+  - Specialized for single-GPU workloads and development workflows
+
+  Key Services:
+  - Ollama: Primary LLM serving with GPU acceleration
+  - Jupyter: Interactive development environment
+  - Model Serving: vLLM-based model deployment
+  - Development Tools: VS Code, MLflow, TensorBoard
+
+  Use Cases:
+  - ML model development and prototyping
+  - Single-GPU inference serving
+  - Research and experimentation
+  - Model evaluation and comparison
+  - Development environment for ML workflows

@@ -1,0 +1,89 @@
+schema_version: "2.0"
+repository:
+  name: colab-config
+  type: infrastructure_configuration
+  approach: hybrid_management
+
+structure_rules:
+  documentation:
+    required_files:
+      - README.md
+      - .agent-context.json
+    optional_files:
+      - AGENTS.md
+      - .safety-rules.yml
+    max_nesting_depth: 4
+
+  naming_conventions:
+    dotfiles: "dot_* for Chezmoi templates"
+    services: "kebab-case for service names"
+    scripts: "kebab-case with .sh extension"
+    ansible: "kebab-case for playbooks"
+
+  organization:
+    separation_principle: "tool-based management"
+    archive_policy: "preserve_never_delete"
+    validation_policy: "validate_before_commit"
+
+validation:
+  automated_checks:
+    pre_commit:
+      - name: syntax_validation
+        commands:
+          - "yamllint ./**/*.yml"
+          - "shellcheck scripts/**/*.sh"
+          - "ansible-playbook --syntax-check ansible/playbooks/*.yml"
+      - name: safety_compliance
+        command: "scripts/validation/safety-check.sh"
+
+    post_change:
+      - name: integration_test
+        command: "scripts/validation/integration-test.sh"
+        required_for: ["system_changes", "service_changes"]
+
+  manual_gates:
+    system_changes:
+      approval_required: true
+      documentation_required: true
+      rollback_plan: mandatory
+
+    service_deployment:
+      approval_required: true
+      health_check_required: true
+
+safety:
+  prohibited_patterns:
+    - pattern: "rm -rf"
+      reason: "Destructive deletion"
+      alternative: "Use archival instead"
+    - pattern: "sudo without validation"
+      reason: "Unsafe escalation"
+      alternative: "Use ansible with checks"
+    - pattern: "hardcoded secrets"
+      reason: "Security violation"
+      alternative: "Use environment variables"
+
+  required_patterns:
+    ansible_playbooks:
+      - "check_mode: yes in defaults"
+      - "any_errors_fatal: yes for critical tasks"
+      - "when conditions for dangerous operations"
+    scripts:
+      - "set -euo pipefail for safety"
+      - "help text and usage info"
+      - "dry-run option where applicable"
+
+ai_integration:
+  context_files:
+    required: [".agent-context.json"]
+    optional: [".safety-rules.yml", ".cursorrules"]
+
+  workflow_optimization:
+    safe_by_default: true
+    validation_first: true
+    documentation_sync: true
+
+  learning_patterns:
+    success_tracking: ".meta/ai-success-patterns.yml"
+    failure_analysis: ".meta/ai-failure-patterns.yml"
+    optimization_feedback: ".meta/ai-optimization.yml"

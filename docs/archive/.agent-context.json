@@ -1,0 +1,48 @@
+{
+  "directory_type": "historical_archive",
+  "primary_tool": "archival_documentation",
+  "purpose": "historical_decisions_and_migration_records",
+  "safety_level": "high",
+  "operational_constraints": {
+    "safe_operations": [
+      "historical_documentation_reading",
+      "decision_record_analysis",
+      "migration_history_review",
+      "archival_content_explanation",
+      "decision_rationale_extraction"
+    ],
+    "restricted_operations": [
+      "archive_modification",
+      "historical_record_changes",
+      "decision_record_editing",
+      "migration_record_alteration"
+    ],
+    "required_validations": [
+      "historical_accuracy_preservation",
+      "decision_record_integrity",
+      "migration_record_completeness"
+    ]
+  },
+  "archive_categories": {
+    "decisions": "architecture_decision_records_adr_format",
+    "migrations": "migration_history_and_process_documentation"
+  },
+  "historical_content": {
+    "hybrid_approach_decision": "rationale_for_ansible_chezmoi_hybrid_strategy",
+    "chezmoi_adoption": "migration_from_symlinks_to_chezmoi_templating",
+    "configuration_constraints": "design_constraints_and_operational_rules",
+    "documentation_reorganization": "this_reorganization_process_and_outcomes"
+  },
+  "preservation_principles": {
+    "immutability": "historical_records_never_modified_only_added",
+    "traceability": "clear_links_between_decisions_and_implementations",
+    "context_preservation": "decision_context_and_alternatives_documented",
+    "learning_value": "lessons_learned_and_outcomes_recorded"
+  },
+  "dependencies": {
+    "current_architecture": "../architecture/",
+    "current_procedures": "../guides/",
+    "decision_implementations": "../../ansible/",
+    "template_implementations": "../../dotfiles/"
+  }
+}
